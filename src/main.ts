@@ -1,6 +1,6 @@
 import './styles/main.css';
 import { store } from './store/AppStore';
-import { fetchStations, refreshPrices } from './api/tankerkoenig';
+import { loadCachedStations, filterCachedStations, fetchStations, getCacheAge } from './api/tankerkoenig';
 import { calculateSmartResults } from './utils/calculator';
 import { getCurrentPosition, getPositionByIP } from './utils/geo';
 import { formatTimeAgo } from './utils/formatter';
@@ -13,8 +13,10 @@ import { initBottomSheet } from './components/BottomSheet';
 import { showToast } from './components/Toast';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 
+// Auto-Refresh alle 15 Minuten (Daten werden stuendlich von GitHub Actions aktualisiert)
+const REFRESH_INTERVAL = 15 * 60 * 1000;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
-let refreshCountdown = 300;
+let refreshCountdown = 900; // 15 Minuten in Sekunden
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
 // Haupt-App aufbauen: Vollbild-Karte + Top-Bar + Bottom Sheet
@@ -166,18 +168,55 @@ async function onPositionUpdated(): Promise<void> {
   await searchStations(pos.lat, pos.lng);
 }
 
+// Tankstellen suchen: Erst vorgeladene Daten, dann Live-API als Fallback
 async function searchStations(lat: number, lng: number): Promise<void> {
   const { fuelType, radius, userProfile } = store.getState();
   store.setLoading(true);
   store.setError(null);
 
   try {
-    const response = await fetchStations(lat, lng, radius, fuelType);
-    store.setStations(response.stations);
-    const results = calculateSmartResults(response.stations, userProfile);
+    let stations;
+
+    // 1. Vorgeladene Daten versuchen (von GitHub Actions geholt)
+    const cached = await loadCachedStations();
+    if (cached && cached.stations.length > 0) {
+      stations = filterCachedStations(cached, lat, lng, radius, fuelType);
+
+      // Cache-Alter anzeigen
+      const cacheTime = getCacheAge();
+      if (cacheTime) {
+        const age = Date.now() - new Date(cacheTime).getTime();
+        const ageMin = Math.round(age / 60000);
+        if (ageMin > 120) {
+          showToast(`Daten sind ${Math.round(ageMin / 60)}h alt`, 'warning', 3000);
+        }
+      }
+    }
+
+    // 2. Fallback: Live-API falls keine gecachten Stationen im Umkreis
+    if (!stations || stations.length === 0) {
+      try {
+        const response = await fetchStations(lat, lng, radius, fuelType);
+        stations = response.stations;
+      } catch (apiErr) {
+        // Wenn auch API fehlschlaegt und wir Cache-Daten haben, groesseren Radius probieren
+        if (cached && cached.stations.length > 0) {
+          stations = filterCachedStations(cached, lat, lng, Math.min(radius * 2, 25), fuelType);
+          if (stations.length > 0) {
+            showToast('API nicht erreichbar, zeige Daten aus dem Cache', 'warning', 3000);
+          }
+        }
+        if (!stations || stations.length === 0) {
+          throw apiErr;
+        }
+      }
+    }
+
+    store.setStations(stations);
+    const results = calculateSmartResults(stations, userProfile);
     store.setSmartResults(results);
     updateStationMarkers(results);
-    showToast(`${response.stations.length} Tankstellen gefunden`, 'success', 2000);
+    showToast(`${stations.length} Tankstellen gefunden`, 'success', 2000);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unbekannter Fehler';
     store.setError(message);
@@ -208,49 +247,26 @@ function onHeatmapToggled(): void {
   toggleHeatmap(smartResults, showHeatmap);
 }
 
+// Preise aktualisieren: Neuen Cache laden oder Stationen neu suchen
 async function doRefresh(): Promise<void> {
-  const { stations, userProfile } = store.getState();
-  if (stations.length === 0) return;
+  const pos = store.getState().position;
+  if (!pos) return;
 
-  const ids = stations.filter(s => s.isOpen).slice(0, 10).map(s => s.id);
-  const pricesResponse = await refreshPrices(ids);
-
-  if (pricesResponse) {
-    const updatedStations = stations.map(s => {
-      const p = pricesResponse.prices[s.id];
-      if (!p) return s;
-      return {
-        ...s,
-        isOpen: p.status === 'open',
-        e5: p.e5 === false ? null : p.e5,
-        e10: p.e10 === false ? null : p.e10,
-        diesel: p.diesel === false ? null : p.diesel,
-        price: (() => {
-          const ft = store.getState().fuelType;
-          const val = p[ft];
-          return val === false ? null : val;
-        })(),
-      };
-    });
-    store.updatePrices(updatedStations);
-    const results = calculateSmartResults(updatedStations, userProfile);
-    store.setSmartResults(results);
-    updateStationMarkers(results);
-    showToast('Preise aktualisiert', 'info', 2000);
-  }
-
-  refreshCountdown = 300;
+  // Cache im Speicher invalidieren und neu laden
+  await searchStations(pos.lat, pos.lng);
+  refreshCountdown = 900;
 }
 
+// Auto-Refresh Timer: Alle 15 Minuten Daten neu laden
 function startRefreshTimer(): void {
   if (refreshTimer) clearInterval(refreshTimer);
   if (countdownInterval) clearInterval(countdownInterval);
 
-  refreshCountdown = 300;
+  refreshCountdown = 900;
 
   refreshTimer = setInterval(() => {
     doRefresh();
-  }, 300000);
+  }, REFRESH_INTERVAL);
 
   countdownInterval = setInterval(() => {
     refreshCountdown = Math.max(0, refreshCountdown - 1);
@@ -262,15 +278,20 @@ function updateRefreshUI(): void {
   const circle = document.getElementById('refresh-circle');
   const text = document.getElementById('refresh-text');
   if (circle) {
-    const progress = refreshCountdown / 300;
+    const progress = refreshCountdown / 900;
     const dashOffset = 81.68 * (1 - progress);
     circle.setAttribute('stroke-dashoffset', dashOffset.toString());
   }
   if (text) {
-    const state = store.getState();
-    text.textContent = state.lastUpdated
-      ? formatTimeAgo(state.lastUpdated)
-      : '--';
+    const cacheTime = getCacheAge();
+    if (cacheTime) {
+      text.textContent = formatTimeAgo(new Date(cacheTime));
+    } else {
+      const state = store.getState();
+      text.textContent = state.lastUpdated
+        ? formatTimeAgo(state.lastUpdated)
+        : '--';
+    }
   }
 }
 

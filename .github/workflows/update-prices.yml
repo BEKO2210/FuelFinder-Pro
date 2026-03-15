@@ -1,0 +1,46 @@
+# =============================================================
+# Stuendlicher Preis-Update via Tankerkoenig API
+# 4 Staedte × 24h = 96 API-Aufrufe/Tag (Limit: 100)
+# Committed die neuen Daten → triggert automatisch deploy.yml
+# =============================================================
+
+name: Update Fuel Prices
+
+on:
+  schedule:
+    # Jede Stunde bei Minute 12 (vermeidet :00 Rush)
+    - cron: '12 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tankstellenpreise abrufen
+        run: node scripts/fetch-prices.mjs
+        env:
+          TANKERKOENIG_API_KEY: ${{ secrets.VITE_TANKERKOENIG_API_KEY }}
+
+      - name: Preis-Daten committen und pushen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/stations.json
+          # Nur committen wenn sich Daten geaendert haben
+          if git diff --cached --quiet; then
+            echo "Keine Aenderungen, ueberspringe Commit"
+          else
+            git commit -m "chore: Preise aktualisiert [$(date -u +'%Y-%m-%d %H:%M UTC')]"
+            git push
+          fi
