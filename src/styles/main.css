@@ -41,6 +41,11 @@ html, body {
 }
 
 /* ============================================= */
+/* HILFKLASSEN                                    */
+/* ============================================= */
+.hidden { display: none !important; }
+
+/* ============================================= */
 /* LAYOUT: Karte nimmt gesamten Viewport ein     */
 /* Top-Bar und Bottom-Sheet schweben darueber     */
 /* ============================================= */
@@ -56,6 +61,12 @@ html, body {
   position: absolute;
   inset: 0;
   z-index: 0;
+}
+
+/* MapLibre Controls unter der Top-Bar positionieren */
+.maplibregl-ctrl-top-right {
+  top: 60px !important;
+  right: 8px !important;
 }
 
 /* ============================================= */
@@ -96,6 +107,7 @@ html, body {
   border: 1px solid var(--fuel-border-light);
   min-height: auto;
   min-width: auto;
+  transition: all 0.2s ease;
 }
 
 .top-bar-btn {
@@ -105,14 +117,13 @@ html, body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: none;
   cursor: pointer;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   background: rgba(21, 25, 33, 0.7);
   border: 1px solid var(--fuel-border-light);
   color: var(--fuel-text-secondary);
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .top-bar-btn:hover {
@@ -140,7 +151,7 @@ html, body {
   display: flex;
   flex-direction: column;
   max-height: 85dvh;
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
   touch-action: none;
 }
@@ -158,8 +169,9 @@ html, body {
   transform: translateY(0);
 }
 
+/* Beim Ziehen keine Animation */
 .bottom-sheet.dragging {
-  transition: none;
+  transition: none !important;
 }
 
 /* Drag Handle */
@@ -169,6 +181,7 @@ html, body {
   padding: 10px 0 6px;
   cursor: grab;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sheet-handle:active {
@@ -180,9 +193,15 @@ html, body {
   height: 4px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.2);
+  transition: background 0.2s ease, width 0.2s ease;
 }
 
-/* Sheet Header (Filter + Sortierung) */
+.sheet-handle:hover .sheet-handle-bar {
+  background: rgba(255, 255, 255, 0.35);
+  width: 44px;
+}
+
+/* Sheet Header (Sortierung) */
 .sheet-header {
   display: flex;
   align-items: center;
@@ -210,10 +229,16 @@ html, body {
   background: var(--fuel-surface);
   color: var(--fuel-text-secondary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   min-height: auto;
   min-width: auto;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pill:hover {
+  background: var(--fuel-surface-2);
+  color: var(--fuel-text);
 }
 
 .pill:active {
@@ -247,6 +272,7 @@ html, body {
   overflow-y: auto;
   padding: 0 12px 12px;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sheet-list::-webkit-scrollbar {
@@ -263,12 +289,18 @@ html, body {
   padding: 14px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.station-card:hover {
+  border-color: var(--fuel-border-light);
+  background: var(--fuel-surface-2);
 }
 
 .station-card:active {
-  border-color: var(--fuel-border-light);
+  transform: scale(0.985);
 }
 
 .station-card .card-top {
@@ -306,6 +338,8 @@ html, body {
   align-items: center;
   justify-content: space-between;
   margin-top: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .station-card .card-price {
@@ -343,12 +377,16 @@ html, body {
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-route:hover {
+  background: var(--fuel-accent-hover);
 }
 
 .btn-route:active {
-  transform: scale(0.98);
-  background: var(--fuel-accent-hover);
+  transform: scale(0.97);
 }
 
 .btn-icon {
@@ -362,11 +400,17 @@ html, body {
   background: transparent;
   color: var(--fuel-text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-icon:hover {
+  border-color: var(--fuel-border-light);
+  color: var(--fuel-text-secondary);
 }
 
 .btn-icon:active {
-  transform: scale(0.95);
+  transform: scale(0.93);
 }
 
 .btn-icon.is-active {
@@ -438,15 +482,16 @@ html, body {
 .station-marker {
   cursor: pointer;
   filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.4));
-  transition: transform 0.12s ease;
+  transition: transform 0.15s ease;
 }
 
 .station-marker:hover {
-  transform: scale(1.1);
+  transform: scale(1.12);
   z-index: 10;
 }
 
 .marker-pin {
+  position: relative;
   padding: 4px 8px;
   border-radius: 16px;
   color: #fff;
@@ -459,6 +504,27 @@ html, body {
   min-height: auto;
   min-width: auto;
   text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Preis-Text im Marker */
+.marker-price {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* Badge im Marker (Trophy/Tag Icon) */
+.marker-badge {
+  display: inline-flex;
+  min-height: auto;
+  min-width: auto;
+}
+
+.marker-badge svg {
+  width: 10px;
+  height: 10px;
 }
 
 .marker-arrow {
@@ -505,19 +571,25 @@ html, body {
 .popup-badge { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-top: 4px; min-height: auto; min-width: auto; }
 .popup-badge-green { background: var(--fuel-green-dim); color: var(--fuel-green); }
 .popup-badge-gray { background: rgba(255,255,255,0.05); color: var(--fuel-text-muted); }
+.popup-status { font-size: 10px; font-weight: 600; margin-left: 6px; min-height: auto; min-width: auto; }
+.popup-status-open { color: var(--fuel-green); }
+.popup-status-closed { color: var(--fuel-text-muted); }
 
 /* ============================================= */
-/* FILTER OVERLAY                                */
+/* FILTER OVERLAY — Smooth Ein-/Ausblendung      */
 /* ============================================= */
 .filter-overlay {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.25s, opacity 0.25s ease;
 }
 
 .filter-overlay.open {
-  display: block;
+  visibility: visible;
+  opacity: 1;
 }
 
 .filter-overlay .filter-backdrop {
@@ -525,6 +597,7 @@ html, body {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .filter-overlay .filter-panel {
@@ -537,6 +610,12 @@ html, body {
   border-top-right-radius: 20px;
   padding: 20px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.filter-overlay.open .filter-panel {
+  transform: translateY(0);
 }
 
 /* ============================================= */
@@ -547,15 +626,22 @@ html, body {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* ============================================= */
-/* TOAST                                         */
+/* TOAST — Smooth Animationen                    */
 /* ============================================= */
-@keyframes toast-in { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@keyframes toast-out { from { opacity: 1; } to { opacity: 0; } }
-.animate-slide-in { animation: toast-in 0.2s ease-out; }
-.animate-slide-out { animation: toast-out 0.15s ease-in forwards; }
+@keyframes toast-in {
+  from { transform: translateY(-16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes toast-out {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-8px); opacity: 0; }
+}
+.animate-slide-in { animation: toast-in 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+.animate-slide-out { animation: toast-out 0.2s ease-in forwards; }
 
 /* ============================================= */
 /* SCROLLBAR & RANGE                             */
@@ -570,6 +656,7 @@ input[type="range"] {
   background: var(--fuel-surface-3);
   border-radius: 2px;
   outline: none;
+  transition: background 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -580,6 +667,12 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
   border: 3px solid var(--fuel-bg);
   box-shadow: 0 0 0 1px var(--fuel-accent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px var(--fuel-accent), 0 0 8px rgba(14, 165, 233, 0.3);
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -603,11 +696,14 @@ button, [role="button"], a, select {
   min-width: 44px;
 }
 
-/* Ausnahmen fuer kleine Elemente */
-.marker-pin, .pill, .sort-btn, .card-badge,
-.popup-badge, .station-popup *, .sheet-handle,
+/* Ausnahmen fuer kleine interaktive Elemente */
+.marker-pin, .marker-price, .marker-badge,
+.pill, .sort-btn, .card-badge,
+.popup-badge, .popup-status, .station-popup *,
+.sheet-handle, .sheet-handle-bar,
 .toast-close-btn, .top-bar-chip, label span,
-.status-dot, .card-unit, .card-address {
+.status-dot, .card-unit, .card-address,
+.card-name, .card-dist {
   min-height: auto;
   min-width: auto;
 }
@@ -649,6 +745,10 @@ button, [role="button"], a, select {
 
   .top-bar {
     left: 380px;
+  }
+
+  .maplibregl-ctrl-top-right {
+    top: 60px !important;
   }
 }
 

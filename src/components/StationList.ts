@@ -38,6 +38,9 @@ export function initStationList(container: HTMLElement): void {
 
   // Lazy Loading bei Scroll
   container.addEventListener('scroll', handleScroll);
+
+  // Retry-Handler einmalig registrieren
+  initRetryHandler(container);
 }
 
 // Stationen rendern
@@ -98,20 +101,26 @@ function renderLoadingState(): void {
   }
 }
 
-// Fehlerzustand anzeigen
+// Fehlerzustand anzeigen (Event Delegation statt wiederholtem addEventListener)
 function renderErrorState(): void {
   const state = store.getState();
   const errorEl = listContainer?.parentElement?.querySelector('#list-error');
   const msgEl = errorEl?.querySelector('#error-message');
-  const retryBtn = errorEl?.querySelector('#retry-btn');
 
-  if (state.error) {
-    if (msgEl) msgEl.textContent = state.error;
-    retryBtn?.addEventListener('click', () => {
+  if (state.error && msgEl) {
+    msgEl.textContent = state.error;
+  }
+}
+
+// Retry-Handler einmalig per Event-Delegation
+function initRetryHandler(container: HTMLElement): void {
+  container.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.id === 'retry-btn' || target.closest('#retry-btn')) {
       store.setError(null);
       window.dispatchEvent(new CustomEvent('fuelfinder:retry'));
-    });
-  }
+    }
+  });
 }
 
 // Lazy Loading: Mehr Stationen laden beim Scrollen
