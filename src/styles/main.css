@@ -289,9 +289,15 @@ html, body {
   padding: 14px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease, opacity 0.3s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  animation: card-fade-in 0.3s ease both;
+}
+
+@keyframes card-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .station-card:hover {
@@ -627,6 +633,18 @@ html, body {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* ============================================= */
+/* SKELETON LOADING — Pulse Animation            */
+/* ============================================= */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
 /* ============================================= */

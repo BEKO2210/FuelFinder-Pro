@@ -73,9 +73,13 @@ function render(): void {
   const visible = results.slice(0, visibleCount);
   listContainer.innerHTML = '';
 
-  visible.forEach(result => {
+  visible.forEach((result, i) => {
     const card = createStationCard(result);
     card.setAttribute('role', 'listitem');
+    // Staggered fade-in für die ersten 10 Karten
+    if (i < 10) {
+      card.style.animationDelay = `${i * 0.04}s`;
+    }
     listContainer!.appendChild(card);
   });
 

@@ -153,8 +153,7 @@ async function shareStation(name: string, price: number, lat: number, lng: numbe
 // Skeleton-Ladekarte
 export function createSkeletonCard(): HTMLElement {
   const card = document.createElement('div');
-  card.className = 'station-card';
-  card.style.opacity = '0.5';
+  card.className = 'station-card skeleton-pulse';
   card.innerHTML = `
     <div class="card-top">
       <div style="flex:1">
