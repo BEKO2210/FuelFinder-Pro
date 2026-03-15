@@ -1,5 +1,6 @@
 import { store } from '../store/AppStore';
 import { formatEuro } from '../utils/formatter';
+import { icons } from '../utils/icons';
 
 let panel: HTMLElement | null = null;
 
@@ -8,13 +9,13 @@ export function initSmartCalculator(): void {
   panel.id = 'calculator-panel';
   panel.className = 'fixed inset-0 z-50 hidden';
   panel.innerHTML = `
-    <div class="calc-overlay absolute inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true"></div>
-    <div class="calc-sheet absolute bottom-0 left-0 right-0 bg-[var(--fuel-bg)] border-t border-[var(--fuel-border)] rounded-t-2xl max-h-[85vh] overflow-y-auto transform transition-transform duration-300">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--fuel-border)]">
-        <h2 class="text-base font-semibold text-[var(--fuel-text)]">Smart Kalkulator</h2>
-        <button id="calc-close" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--fuel-surface-2)] text-[var(--fuel-text-muted)]" aria-label="Schließen">&times;</button>
+    <div class="calc-overlay absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true"></div>
+    <div class="calc-sheet absolute bottom-0 left-0 right-0 bg-[var(--fuel-bg)] border-t border-[var(--fuel-border-light)] rounded-t-2xl max-h-[85vh] max-h-[85dvh] overflow-y-auto">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--fuel-border)]">
+        <h2 class="text-[14px] font-semibold text-[var(--fuel-text)] tracking-tight">Smart Kalkulator</h2>
+        <button id="calc-close" class="header-btn" aria-label="Schliessen">${icons.close}</button>
       </div>
-      <div class="p-5 space-y-5" id="calc-body"></div>
+      <div class="p-4 space-y-4" id="calc-body"></div>
     </div>
   `;
   document.body.appendChild(panel);
@@ -52,40 +53,52 @@ function renderCalcBody(): void {
   body.innerHTML = `
     <div class="space-y-4">
       <div>
-        <label class="block text-xs text-[var(--fuel-text-muted)] mb-1.5">Tankgröße: <strong class="text-[var(--fuel-text)]">${userProfile.tankVolume} L</strong></label>
-        <input type="range" min="20" max="120" step="1" value="${userProfile.tankVolume}" id="calc-volume" class="w-full accent-[var(--fuel-accent)]" aria-label="Tankgröße in Litern" />
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-[12px] text-[var(--fuel-text-secondary)] font-medium">Tankgroesse</label>
+          <span class="text-[13px] font-bold text-[var(--fuel-text)] text-tabular">${userProfile.tankVolume} L</span>
+        </div>
+        <input type="range" min="20" max="120" step="1" value="${userProfile.tankVolume}" id="calc-volume" aria-label="Tankgroesse in Litern" />
       </div>
 
       <div>
-        <label class="block text-xs text-[var(--fuel-text-muted)] mb-1.5">Verbrauch: <strong class="text-[var(--fuel-text)]">${userProfile.consumption} L/100km</strong></label>
-        <input type="range" min="3" max="20" step="0.1" value="${userProfile.consumption}" id="calc-consumption" class="w-full accent-[var(--fuel-accent)]" aria-label="Verbrauch in Liter pro 100 Kilometer" />
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-[12px] text-[var(--fuel-text-secondary)] font-medium">Verbrauch</label>
+          <span class="text-[13px] font-bold text-[var(--fuel-text)] text-tabular">${userProfile.consumption} L/100km</span>
+        </div>
+        <input type="range" min="3" max="20" step="0.1" value="${userProfile.consumption}" id="calc-consumption" aria-label="Verbrauch" />
       </div>
 
       <div>
-        <label class="block text-xs text-[var(--fuel-text-muted)] mb-1.5">Tank-Füllstand: <strong class="text-[var(--fuel-text)]">${userProfile.currentFillPercent}%</strong></label>
-        <input type="range" min="0" max="100" step="5" value="${userProfile.currentFillPercent}" id="calc-fill" class="w-full accent-[var(--fuel-accent)]" aria-label="Aktueller Füllstand in Prozent" />
-        <div class="mt-1 h-2 bg-[var(--fuel-surface-2)] rounded-full overflow-hidden">
-          <div class="h-full bg-[var(--fuel-accent)] rounded-full transition-all" style="width:${userProfile.currentFillPercent}%"></div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-[12px] text-[var(--fuel-text-secondary)] font-medium">Fuellstand</label>
+          <span class="text-[13px] font-bold text-[var(--fuel-text)] text-tabular">${userProfile.currentFillPercent}%</span>
+        </div>
+        <input type="range" min="0" max="100" step="5" value="${userProfile.currentFillPercent}" id="calc-fill" aria-label="Aktueller Fuellstand" />
+        <div class="mt-1.5 h-1.5 bg-[var(--fuel-surface-3)] rounded-full overflow-hidden">
+          <div class="h-full bg-[var(--fuel-accent)] rounded-full transition-all duration-200" style="width:${userProfile.currentFillPercent}%"></div>
         </div>
       </div>
 
-      <div class="flex gap-2">
+      <div class="flex gap-1.5">
         ${(['e5', 'e10', 'diesel'] as const).map(ft =>
-          `<button data-calcfuel="${ft}" class="flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${ft === fuelType ? 'bg-[var(--fuel-accent)] text-white' : 'bg-[var(--fuel-surface-2)] text-[var(--fuel-text-muted)] hover:text-[var(--fuel-text)]'}">${ft.toUpperCase()}</button>`
+          `<button data-calcfuel="${ft}" class="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all ${ft === fuelType ? 'bg-[var(--fuel-accent)] text-white' : 'bg-[var(--fuel-surface-2)] text-[var(--fuel-text-muted)] hover:text-[var(--fuel-text-secondary)]'}">${ft.toUpperCase()}</button>`
         ).join('')}
       </div>
     </div>
 
-    <div class="bg-[var(--fuel-surface)] rounded-xl p-4 space-y-2 border border-[var(--fuel-border)]">
-      <p class="text-sm text-[var(--fuel-text)]">Du brauchst ca. <strong>${litersNeeded.toFixed(1)} Liter</strong></p>
+    <div class="card-surface p-4 space-y-2">
+      <p class="text-[13px] text-[var(--fuel-text)]">Du brauchst ca. <strong class="text-[var(--fuel-text)]">${litersNeeded.toFixed(1)} Liter</strong></p>
       ${bestResult ? `
-        <p class="text-sm text-[var(--fuel-text)]">Bei <strong>${bestResult.station.name}</strong> kostet das: <strong>${formatEuro(litersNeeded * bestResult.rawPrice)}</strong></p>
+        <p class="text-[13px] text-[var(--fuel-text)]">Bei <strong>${bestResult.station.name}</strong>: <strong class="text-tabular">${formatEuro(litersNeeded * bestResult.rawPrice)}</strong></p>
         ${nearestResult && nearestResult.station.id !== bestResult.station.id ? `
-          <p class="text-sm text-[var(--fuel-text)]">Im Vergleich zur nächsten Station sparst du: <strong class="text-green-400">${formatEuro(bestResult.netSavings)}</strong></p>
-          <p class="text-xs text-[var(--fuel-text-muted)]">Umweg kostet: ${formatEuro(bestResult.detourCost)} → Netto: ${formatEuro(bestResult.netSavings)}</p>
+          <div class="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--fuel-border)]">
+            <span class="text-[var(--fuel-green)]">${icons.trendDown}</span>
+            <p class="text-[13px] text-[var(--fuel-text)]">Ersparnis: <strong class="text-[var(--fuel-green)]">${formatEuro(bestResult.netSavings)}</strong></p>
+          </div>
+          <p class="text-[11px] text-[var(--fuel-text-muted)]">Umweg: ${formatEuro(bestResult.detourCost)} / Netto: ${formatEuro(bestResult.netSavings)}</p>
         ` : ''}
       ` : `
-        <p class="text-sm text-[var(--fuel-text-muted)]">Suche Tankstellen, um eine Berechnung zu sehen.</p>
+        <p class="text-[13px] text-[var(--fuel-text-muted)]">Suche Tankstellen, um eine Berechnung zu sehen.</p>
       `}
     </div>
   `;

@@ -1,80 +1,157 @@
 @import "tailwindcss";
 
 :root {
-  --fuel-bg: #0f172a;
-  --fuel-surface: #1e293b;
-  --fuel-surface-2: #334155;
-  --fuel-border: #475569;
-  --fuel-text: #f1f5f9;
-  --fuel-text-muted: #94a3b8;
-  --fuel-green: #22c55e;
-  --fuel-yellow: #eab308;
-  --fuel-red: #ef4444;
-  --fuel-blue: #3b82f6;
-  --fuel-accent: #6366f1;
-  --fuel-radius: 12px;
-  --fuel-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --fuel-bg: #0c0f14;
+  --fuel-surface: #151921;
+  --fuel-surface-2: #1c222d;
+  --fuel-surface-3: #242b38;
+  --fuel-border: rgba(255, 255, 255, 0.06);
+  --fuel-border-light: rgba(255, 255, 255, 0.1);
+  --fuel-text: #edf0f7;
+  --fuel-text-secondary: #8b95a8;
+  --fuel-text-muted: #5c6478;
+  --fuel-green: #34d399;
+  --fuel-green-dim: rgba(52, 211, 153, 0.12);
+  --fuel-yellow: #fbbf24;
+  --fuel-yellow-dim: rgba(251, 191, 36, 0.12);
+  --fuel-red: #f87171;
+  --fuel-red-dim: rgba(248, 113, 113, 0.12);
+  --fuel-accent: #0ea5e9;
+  --fuel-accent-dim: rgba(14, 165, 233, 0.12);
+  --fuel-accent-hover: #38bdf8;
+  --fuel-radius: 14px;
+  --fuel-radius-sm: 10px;
+  --fuel-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --fuel-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html, body {
-  margin: 0;
-  padding: 0;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--fuel-bg);
   color: var(--fuel-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
 #app {
   height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Header */
+/* ========================= */
+/* HEADER                    */
+/* ========================= */
 .app-header {
-  height: 56px;
+  height: 52px;
   background: var(--fuel-surface);
   border-bottom: 1px solid var(--fuel-border);
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 0 12px;
+  gap: 8px;
   flex-shrink: 0;
   z-index: 30;
+  backdrop-filter: blur(12px);
 }
 
-.app-header .logo {
+.logo {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
+  letter-spacing: -0.02em;
   color: var(--fuel-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.logo svg {
+  color: var(--fuel-accent);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.header-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--fuel-radius-sm);
+  color: var(--fuel-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-btn:hover {
+  background: var(--fuel-surface-2);
+  color: var(--fuel-text);
+}
+
+.header-btn:active {
+  transform: scale(0.95);
+}
+
+.header-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.app-header .logo svg {
-  width: 24px;
-  height: 24px;
-  fill: var(--fuel-accent);
+.chip-green {
+  background: var(--fuel-green-dim);
+  color: var(--fuel-green);
 }
 
-/* Main layout */
+.chip-yellow {
+  background: var(--fuel-yellow-dim);
+  color: var(--fuel-yellow);
+}
+
+.chip-red {
+  background: var(--fuel-red-dim);
+  color: var(--fuel-red);
+}
+
+/* ========================= */
+/* MAIN LAYOUT               */
+/* ========================= */
 .app-main {
   flex: 1;
   display: flex;
   overflow: hidden;
+  position: relative;
 }
 
-/* Sidebar */
+/* ========================= */
+/* SIDEBAR                   */
+/* ========================= */
 .app-sidebar {
   width: 380px;
   display: flex;
@@ -83,11 +160,13 @@ html, body {
   border-right: 1px solid var(--fuel-border);
   overflow: hidden;
   flex-shrink: 0;
+  z-index: 20;
 }
 
 .app-map-container {
   flex: 1;
   position: relative;
+  min-width: 0;
 }
 
 .app-map-container .maplibregl-map {
@@ -95,62 +174,73 @@ html, body {
   height: 100%;
 }
 
-/* User marker */
+/* ========================= */
+/* MAP MARKERS               */
+/* ========================= */
 .user-marker {
   position: relative;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .user-marker-dot {
-  width: 16px;
-  height: 16px;
-  background: var(--fuel-blue);
-  border: 3px solid white;
+  width: 14px;
+  height: 14px;
+  background: var(--fuel-accent);
+  border: 2.5px solid #fff;
   border-radius: 50%;
   position: absolute;
-  top: 2px;
-  left: 2px;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+  top: 4px;
+  left: 4px;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
   z-index: 2;
 }
 
 .user-marker-pulse {
-  width: 40px;
-  height: 40px;
-  background: rgba(59, 130, 246, 0.3);
+  width: 44px;
+  height: 44px;
+  background: rgba(14, 165, 233, 0.2);
   border-radius: 50%;
   position: absolute;
-  top: -10px;
-  left: -10px;
-  animation: pulse-ring 2s ease-out infinite;
+  top: -11px;
+  left: -11px;
+  animation: pulse-ring 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
   z-index: 1;
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.5); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
+  0% { transform: scale(0.4); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
 }
 
-/* Station markers */
+/* Station marker — floating pill */
 .station-marker {
   cursor: pointer;
   position: relative;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+  transition: transform 0.15s ease;
+}
+
+.station-marker:hover {
+  transform: scale(1.08);
+  z-index: 10;
 }
 
 .marker-pin {
-  padding: 4px 8px;
-  border-radius: 8px;
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  position: relative;
-  white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  position: relative;
+  min-height: auto;
+  min-width: auto;
+  line-height: 1;
 }
 
 .marker-price {
@@ -158,86 +248,40 @@ html, body {
 }
 
 .marker-badge {
-  font-size: 10px;
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+}
+
+.marker-badge svg {
+  width: 11px;
+  height: 11px;
 }
 
 .marker-arrow {
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid;
   margin: 0 auto;
 }
 
-/* Popup */
-.station-popup {
-  font-family: inherit;
-  color: var(--fuel-text);
+/* Best value marker glow */
+.marker-best .marker-pin {
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4), 0 0 12px rgba(14, 165, 233, 0.2);
 }
 
-.station-popup strong {
-  font-size: 14px;
-  display: block;
-  margin-bottom: 2px;
-}
-
-.station-popup p {
-  margin: 2px 0;
-  font-size: 12px;
-  color: var(--fuel-text-muted);
-}
-
-.station-popup .popup-price {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 6px 0;
-}
-
-.popup-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.popup-badge-green {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
-}
-
-.popup-badge-gray {
-  background: rgba(107, 114, 128, 0.2);
-  color: #9ca3af;
-}
-
-.popup-open {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #22c55e;
-  margin-left: 8px;
-}
-
-.popup-closed {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #6b7280;
-  margin-left: 8px;
-}
-
-/* MapLibre popup override */
+/* ========================= */
+/* MAP POPUP                 */
+/* ========================= */
 .maplibregl-popup-content {
   background: var(--fuel-surface) !important;
-  border: 1px solid var(--fuel-border) !important;
-  border-radius: 12px !important;
-  padding: 12px !important;
+  border: 1px solid var(--fuel-border-light) !important;
+  border-radius: var(--fuel-radius) !important;
+  padding: 14px !important;
   box-shadow: var(--fuel-shadow) !important;
+  max-width: 260px;
 }
 
 .maplibregl-popup-close-button {
@@ -245,59 +289,162 @@ html, body {
   font-size: 18px !important;
   right: 8px !important;
   top: 8px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  min-height: auto !important;
+  min-width: auto !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  background: var(--fuel-surface-2) !important;
+  color: var(--fuel-text) !important;
 }
 
 .maplibregl-popup-tip {
   border-top-color: var(--fuel-surface) !important;
 }
 
-/* Refresh timer */
+.station-popup {
+  font-family: inherit;
+  color: var(--fuel-text);
+}
+
+.station-popup .popup-name {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+
+.station-popup .popup-address {
+  margin: 0;
+  font-size: 12px;
+  color: var(--fuel-text-secondary);
+  min-height: auto;
+  min-width: auto;
+}
+
+.station-popup .popup-price {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 8px 0 4px;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  min-height: auto;
+  min-width: auto;
+}
+
+.station-popup .popup-dist {
+  font-size: 12px;
+  color: var(--fuel-text-secondary);
+  margin: 0;
+  min-height: auto;
+  min-width: auto;
+}
+
+.popup-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+  min-height: auto;
+  min-width: auto;
+}
+
+.popup-badge-green {
+  background: var(--fuel-green-dim);
+  color: var(--fuel-green);
+}
+
+.popup-badge-gray {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fuel-text-secondary);
+}
+
+.popup-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 6px;
+  min-height: auto;
+  min-width: auto;
+}
+
+.popup-status-open {
+  color: var(--fuel-green);
+}
+
+.popup-status-closed {
+  color: var(--fuel-text-muted);
+}
+
+/* ========================= */
+/* REFRESH RING              */
+/* ========================= */
 .refresh-ring {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
 .refresh-ring circle {
   fill: none;
   stroke: var(--fuel-accent);
-  stroke-width: 3;
+  stroke-width: 2.5;
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: center;
+  opacity: 0.5;
 }
 
-/* Toast animations */
+/* ========================= */
+/* TOAST                     */
+/* ========================= */
 @keyframes slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes slide-out {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-12px); opacity: 0; }
 }
 
 .animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+  animation: slide-in 0.25s ease-out;
 }
 
 .animate-slide-out {
-  animation: slide-out 0.3s ease-in forwards;
+  animation: slide-out 0.2s ease-in forwards;
 }
 
-/* Price flash animation */
+/* ========================= */
+/* PRICE FLASH               */
+/* ========================= */
 @keyframes price-flash {
   0%, 100% { background: transparent; }
-  50% { background: rgba(234, 179, 8, 0.2); }
+  50% { background: var(--fuel-yellow-dim); }
 }
 
 .price-updated {
-  animation: price-flash 1s ease-in-out 2;
+  animation: price-flash 0.8s ease-in-out 2;
 }
 
-/* Scrollbar */
+/* ========================= */
+/* SCROLLBAR                 */
+/* ========================= */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -305,22 +452,25 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--fuel-border);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--fuel-text-muted);
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Mobile layout */
+/* ========================= */
+/* MOBILE (< 768px)          */
+/* ========================= */
 @media (max-width: 767px) {
   .app-header {
     height: 48px;
-    padding: 0 12px;
+    padding: 0 10px;
+    gap: 6px;
   }
 
-  .app-header .logo span:not(.logo-icon) {
+  .logo .logo-text {
     display: none;
   }
 
@@ -333,23 +483,23 @@ html, body {
     border-right: none;
     border-top: 1px solid var(--fuel-border);
     position: relative;
-    min-height: 40vh;
-    max-height: 55vh;
+    flex: 1;
+    min-height: 0;
   }
 
   .app-map-container {
-    height: 55vh;
+    height: 50dvh;
     flex-shrink: 0;
   }
 
   .mobile-drawer-handle {
     display: block;
-    width: 40px;
+    width: 36px;
     height: 4px;
-    background: var(--fuel-border);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 2px;
-    margin: 8px auto;
-    cursor: grab;
+    margin: 6px auto 2px;
+    flex-shrink: 0;
   }
 }
 
@@ -359,80 +509,88 @@ html, body {
   }
 }
 
-/* Map controls */
-.map-overlay-controls {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 10;
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-sidebar {
+    width: 320px;
+  }
 }
 
-.map-overlay-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--fuel-surface);
-  border: 1px solid var(--fuel-border);
-  border-radius: 10px;
-  color: var(--fuel-text);
-  cursor: pointer;
-  font-size: 16px;
-  box-shadow: var(--fuel-shadow);
-  transition: background 0.2s;
-}
-
-.map-overlay-btn:hover {
-  background: var(--fuel-surface-2);
-}
-
-/* Range slider */
+/* ========================= */
+/* RANGE SLIDER              */
+/* ========================= */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
-  background: var(--fuel-surface-2);
-  border-radius: 3px;
+  width: 100%;
+  height: 4px;
+  background: var(--fuel-surface-3);
+  border-radius: 2px;
   outline: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: var(--fuel-accent);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--fuel-bg);
+  border: 3px solid var(--fuel-bg);
+  box-shadow: 0 0 0 1px var(--fuel-accent), 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: var(--fuel-accent);
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid var(--fuel-bg);
+  border: 3px solid var(--fuel-bg);
+  box-shadow: 0 0 0 1px var(--fuel-accent), 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Focus styles */
+/* ========================= */
+/* FOCUS                     */
+/* ========================= */
 *:focus-visible {
   outline: 2px solid var(--fuel-accent);
   outline-offset: 2px;
 }
 
-/* Touch targets */
-button, [role="button"], a {
+/* ========================= */
+/* TOUCH TARGETS             */
+/* ========================= */
+button, [role="button"], a, select {
   min-height: 44px;
   min-width: 44px;
 }
 
-.marker-pin, .popup-badge, .station-popup p {
+.marker-pin, .popup-badge, .station-popup p, .station-popup .popup-name,
+.station-popup .popup-address, .station-popup .popup-dist,
+.popup-status, .header-chip, .sort-btn, .filter-chip,
+.toast-close-btn, label span {
   min-height: auto;
   min-width: auto;
+}
+
+/* ========================= */
+/* UTILITY CLASSES           */
+/* ========================= */
+.glass {
+  background: rgba(21, 25, 33, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.card-surface {
+  background: var(--fuel-surface);
+  border: 1px solid var(--fuel-border);
+  border-radius: var(--fuel-radius);
+}
+
+.text-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }

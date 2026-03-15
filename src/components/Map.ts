@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 import type { TKStation, GeoPosition, SmartResult } from '../types';
 import { store } from '../store/AppStore';
 import { formatPriceLarge, formatDistance, getPriceColor } from '../utils/formatter';
+import { icons } from '../utils/icons';
 
 let map: maplibregl.Map | null = null;
 let userMarkerEl: HTMLElement | null = null;
@@ -20,7 +21,7 @@ export function initMap(container: HTMLElement): maplibregl.Map {
     attributionControl: {},
   });
 
-  map.addControl(new maplibregl.NavigationControl(), 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), 'top-right');
   map.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
   map.on('click', (e: maplibregl.MapMouseEvent) => {
@@ -52,12 +53,7 @@ export function setUserPosition(pos: GeoPosition): void {
     if (accuracyCircle) accuracyCircle.remove();
     const el = document.createElement('div');
     const pixelRadius = Math.max(20, pos.accuracy * 0.5);
-    el.style.width = `${pixelRadius}px`;
-    el.style.height = `${pixelRadius}px`;
-    el.style.borderRadius = '50%';
-    el.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
-    el.style.border = '2px solid rgba(59, 130, 246, 0.3)';
-    el.style.pointerEvents = 'none';
+    el.style.cssText = `width:${pixelRadius}px;height:${pixelRadius}px;border-radius:50%;background:rgba(14,165,233,0.08);border:1.5px solid rgba(14,165,233,0.15);pointer-events:none;`;
     accuracyCircle = new maplibregl.Marker({ element: el })
       .setLngLat([pos.lng, pos.lat])
       .addTo(map);
@@ -81,40 +77,45 @@ export function updateStationMarkers(results: SmartResult[]): void {
   results.forEach(result => {
     const { station, recommendation, worthIt, netSavings } = result;
     const color = !station.isOpen
-      ? '#6b7280'
+      ? '#4b5563'
       : getPriceColor(result.rawPrice, minPrice, maxPrice);
 
     const el = document.createElement('div');
-    el.className = 'station-marker';
+    el.className = `station-marker${recommendation === 'BEST_VALUE' ? ' marker-best' : ''}`;
     el.setAttribute('role', 'button');
-    el.setAttribute('aria-label', `${station.name}: ${formatPriceLarge(result.rawPrice)} € pro Liter`);
+    el.setAttribute('aria-label', `${station.name}: ${formatPriceLarge(result.rawPrice)} Euro pro Liter`);
     el.setAttribute('tabindex', '0');
 
-    const badge = recommendation === 'BEST_VALUE' ? '🏆' : recommendation === 'CHEAPEST' ? '💰' : '';
+    const badgeSvg = recommendation === 'BEST_VALUE'
+      ? `<span class="marker-badge">${icons.trophy}</span>`
+      : recommendation === 'CHEAPEST'
+        ? `<span class="marker-badge">${icons.tag}</span>`
+        : '';
 
     el.innerHTML = `
       <div class="marker-pin" style="background:${color}">
         <span class="marker-price">${formatPriceLarge(result.rawPrice)}</span>
-        ${badge ? `<span class="marker-badge">${badge}</span>` : ''}
+        ${badgeSvg}
       </div>
       <div class="marker-arrow" style="border-top-color:${color}"></div>
     `;
 
-    const stationPopup = new maplibregl.Popup({ offset: 25, closeButton: true, maxWidth: '280px' })
+    const savingsText = worthIt
+      ? `<span class="popup-badge popup-badge-green">Spare ${netSavings.toFixed(2).replace('.', ',')} EUR</span>`
+      : `<span class="popup-badge popup-badge-gray">Kein Vorteil</span>`;
+
+    const statusText = station.isOpen
+      ? '<span class="popup-status popup-status-open">Geoeffnet</span>'
+      : '<span class="popup-status popup-status-closed">Geschlossen</span>';
+
+    const stationPopup = new maplibregl.Popup({ offset: 25, closeButton: true, maxWidth: '260px' })
       .setHTML(`
         <div class="station-popup">
-          <strong>${station.name}</strong>
-          <p>${station.street} ${station.houseNumber}, ${station.place}</p>
-          <p class="popup-price" style="color:${color}">${formatPriceLarge(result.rawPrice)} €/L</p>
-          <p>${formatDistance(station.dist)} entfernt</p>
-          ${worthIt
-            ? `<span class="popup-badge popup-badge-green">Spare ${netSavings.toFixed(2).replace('.', ',')} €</span>`
-            : `<span class="popup-badge popup-badge-gray">Kein Vorteil</span>`
-          }
-          ${station.isOpen
-            ? '<span class="popup-open">Geöffnet</span>'
-            : '<span class="popup-closed">Geschlossen</span>'
-          }
+          <span class="popup-name">${station.name}</span>
+          <p class="popup-address">${station.street} ${station.houseNumber}, ${station.place}</p>
+          <p class="popup-price" style="color:${color}">${formatPriceLarge(result.rawPrice)} EUR/L</p>
+          <p class="popup-dist">${formatDistance(station.dist)} entfernt</p>
+          <div style="margin-top:6px">${savingsText}${statusText}</div>
         </div>
       `);
 
@@ -123,9 +124,7 @@ export function updateStationMarkers(results: SmartResult[]): void {
       .setPopup(stationPopup)
       .addTo(map!);
 
-    el.addEventListener('click', () => {
-      store.selectStation(station);
-    });
+    el.addEventListener('click', () => store.selectStation(station));
     el.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -165,9 +164,9 @@ export function showRouteLine(from: GeoPosition, to: TKStation): void {
       source: id,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': '#6366f1',
-        'line-width': 3,
-        'line-dasharray': [2, 2],
+        'line-color': '#0ea5e9',
+        'line-width': 2.5,
+        'line-dasharray': [3, 2],
       },
     });
   } else {
@@ -223,14 +222,14 @@ export function toggleHeatmap(results: SmartResult[], show: boolean): void {
         'heatmap-weight': ['interpolate', ['linear'], ['get', 'price'], 1.0, 0, 2.5, 1],
         'heatmap-intensity': 1,
         'heatmap-radius': 40,
-        'heatmap-opacity': 0.6,
+        'heatmap-opacity': 0.5,
         'heatmap-color': [
           'interpolate', ['linear'], ['heatmap-density'],
           0, 'rgba(0,0,0,0)',
-          0.2, '#22c55e',
-          0.5, '#eab308',
-          0.8, '#ef4444',
-          1, '#dc2626',
+          0.2, '#34d399',
+          0.5, '#fbbf24',
+          0.8, '#f87171',
+          1, '#ef4444',
         ],
       },
     });
