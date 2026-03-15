@@ -1,26 +1,30 @@
+// Smart Kalkulator — Berechnet Tankkosten und Ersparnis
+// Wird als Overlay ueber dem Bottom Sheet geoeffnet
+
 import { store } from '../store/AppStore';
 import { formatEuro } from '../utils/formatter';
 import { icons } from '../utils/icons';
 
 let panel: HTMLElement | null = null;
 
+// Kalkulator initialisieren
 export function initSmartCalculator(): void {
   panel = document.createElement('div');
   panel.id = 'calculator-panel';
-  panel.className = 'fixed inset-0 z-50 hidden';
+  panel.className = 'filter-overlay';
   panel.innerHTML = `
-    <div class="calc-overlay absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true"></div>
-    <div class="calc-sheet absolute bottom-0 left-0 right-0 bg-[var(--fuel-bg)] border-t border-[var(--fuel-border-light)] rounded-t-2xl max-h-[85vh] max-h-[85dvh] overflow-y-auto">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-[var(--fuel-border)]">
-        <h2 class="text-[14px] font-semibold text-[var(--fuel-text)] tracking-tight">Smart Kalkulator</h2>
-        <button id="calc-close" class="header-btn" aria-label="Schliessen">${icons.close}</button>
+    <div class="filter-backdrop calc-overlay-bg" aria-hidden="true"></div>
+    <div class="filter-panel" style="max-height:85dvh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="font-size:16px;font-weight:700;color:var(--fuel-text)">Smart Kalkulator</h2>
+        <button id="calc-close" class="top-bar-btn" aria-label="Schliessen">${icons.close}</button>
       </div>
-      <div class="p-4 space-y-4" id="calc-body"></div>
+      <div id="calc-body"></div>
     </div>
   `;
   document.body.appendChild(panel);
 
-  panel.querySelector('.calc-overlay')?.addEventListener('click', () => store.toggleCalculator());
+  panel.querySelector('.calc-overlay-bg')?.addEventListener('click', () => store.toggleCalculator());
   panel.querySelector('#calc-close')?.addEventListener('click', () => store.toggleCalculator());
 
   store.on('calculatorToggled', togglePanel);
@@ -30,17 +34,19 @@ export function initSmartCalculator(): void {
   renderCalcBody();
 }
 
+// Panel ein-/ausblenden
 function togglePanel(): void {
   if (!panel) return;
   const isOpen = store.getState().calculatorOpen;
   if (isOpen) {
-    panel.classList.remove('hidden');
+    panel.classList.add('open');
     renderCalcBody();
   } else {
-    panel.classList.add('hidden');
+    panel.classList.remove('open');
   }
 }
 
+// Kalkulator-Inhalt rendern
 function renderCalcBody(): void {
   const body = panel?.querySelector('#calc-body');
   if (!body) return;
@@ -51,58 +57,59 @@ function renderCalcBody(): void {
   const nearestResult = smartResults.length > 0 ? smartResults.reduce((a, b) => a.station.dist < b.station.dist ? a : b) : null;
 
   body.innerHTML = `
-    <div class="space-y-4">
+    <div style="display:flex;flex-direction:column;gap:16px">
       <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-[12px] text-[var(--fuel-text-secondary)] font-medium">Tankgroesse</label>
-          <span class="text-[13px] font-bold text-[var(--fuel-text)] text-tabular">${userProfile.tankVolume} L</span>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Tankgroesse</label>
+          <span style="font-size:13px;font-weight:700;color:var(--fuel-text);font-variant-numeric:tabular-nums">${userProfile.tankVolume} L</span>
         </div>
         <input type="range" min="20" max="120" step="1" value="${userProfile.tankVolume}" id="calc-volume" aria-label="Tankgroesse in Litern" />
       </div>
 
       <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-[12px] text-[var(--fuel-text-secondary)] font-medium">Verbrauch</label>
-          <span class="text-[13px] font-bold text-[var(--fuel-text)] text-tabular">${userProfile.consumption} L/100km</span>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Verbrauch</label>
+          <span style="font-size:13px;font-weight:700;color:var(--fuel-text);font-variant-numeric:tabular-nums">${userProfile.consumption} L/100km</span>
         </div>
         <input type="range" min="3" max="20" step="0.1" value="${userProfile.consumption}" id="calc-consumption" aria-label="Verbrauch" />
       </div>
 
       <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-[12px] text-[var(--fuel-text-secondary)] font-medium">Fuellstand</label>
-          <span class="text-[13px] font-bold text-[var(--fuel-text)] text-tabular">${userProfile.currentFillPercent}%</span>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Fuellstand</label>
+          <span style="font-size:13px;font-weight:700;color:var(--fuel-text);font-variant-numeric:tabular-nums">${userProfile.currentFillPercent}%</span>
         </div>
         <input type="range" min="0" max="100" step="5" value="${userProfile.currentFillPercent}" id="calc-fill" aria-label="Aktueller Fuellstand" />
-        <div class="mt-1.5 h-1.5 bg-[var(--fuel-surface-3)] rounded-full overflow-hidden">
-          <div class="h-full bg-[var(--fuel-accent)] rounded-full transition-all duration-200" style="width:${userProfile.currentFillPercent}%"></div>
+        <div style="margin-top:6px;height:5px;background:var(--fuel-surface-3);border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:var(--fuel-accent);border-radius:3px;transition:width 0.2s;width:${userProfile.currentFillPercent}%"></div>
         </div>
       </div>
 
-      <div class="flex gap-1.5">
+      <div style="display:flex;gap:6px">
         ${(['e5', 'e10', 'diesel'] as const).map(ft =>
-          `<button data-calcfuel="${ft}" class="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all ${ft === fuelType ? 'bg-[var(--fuel-accent)] text-white' : 'bg-[var(--fuel-surface-2)] text-[var(--fuel-text-muted)] hover:text-[var(--fuel-text-secondary)]'}">${ft.toUpperCase()}</button>`
+          `<button data-calcfuel="${ft}" class="pill${ft === fuelType ? ' active' : ''}" style="flex:1;justify-content:center">${ft.toUpperCase()}</button>`
         ).join('')}
       </div>
     </div>
 
-    <div class="card-surface p-4 space-y-2">
-      <p class="text-[13px] text-[var(--fuel-text)]">Du brauchst ca. <strong class="text-[var(--fuel-text)]">${litersNeeded.toFixed(1)} Liter</strong></p>
+    <div style="margin-top:16px;background:var(--fuel-surface);border:1px solid var(--fuel-border);border-radius:var(--fuel-radius);padding:16px">
+      <p style="font-size:13px;color:var(--fuel-text)">Du brauchst ca. <strong>${litersNeeded.toFixed(1)} Liter</strong></p>
       ${bestResult ? `
-        <p class="text-[13px] text-[var(--fuel-text)]">Bei <strong>${bestResult.station.name}</strong>: <strong class="text-tabular">${formatEuro(litersNeeded * bestResult.rawPrice)}</strong></p>
+        <p style="font-size:13px;color:var(--fuel-text);margin-top:6px">Bei <strong>${bestResult.station.name}</strong>: <strong style="font-variant-numeric:tabular-nums">${formatEuro(litersNeeded * bestResult.rawPrice)}</strong></p>
         ${nearestResult && nearestResult.station.id !== bestResult.station.id ? `
-          <div class="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--fuel-border)]">
-            <span class="text-[var(--fuel-green)]">${icons.trendDown}</span>
-            <p class="text-[13px] text-[var(--fuel-text)]">Ersparnis: <strong class="text-[var(--fuel-green)]">${formatEuro(bestResult.netSavings)}</strong></p>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--fuel-border)">
+            <span style="color:var(--fuel-green)">${icons.trendDown}</span>
+            <p style="font-size:13px;color:var(--fuel-text)">Ersparnis: <strong style="color:var(--fuel-green)">${formatEuro(bestResult.netSavings)}</strong></p>
           </div>
-          <p class="text-[11px] text-[var(--fuel-text-muted)]">Umweg: ${formatEuro(bestResult.detourCost)} / Netto: ${formatEuro(bestResult.netSavings)}</p>
+          <p style="font-size:11px;color:var(--fuel-text-muted);margin-top:4px">Umweg: ${formatEuro(bestResult.detourCost)} / Netto: ${formatEuro(bestResult.netSavings)}</p>
         ` : ''}
       ` : `
-        <p class="text-[13px] text-[var(--fuel-text-muted)]">Suche Tankstellen, um eine Berechnung zu sehen.</p>
+        <p style="font-size:13px;color:var(--fuel-text-muted);margin-top:6px">Suche Tankstellen, um eine Berechnung zu sehen.</p>
       `}
     </div>
   `;
 
+  // Slider Events
   body.querySelector('#calc-volume')?.addEventListener('input', (e) => {
     store.setUserProfile({ tankVolume: parseFloat((e.target as HTMLInputElement).value) });
   });

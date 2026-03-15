@@ -7,9 +7,9 @@ import { formatTimeAgo } from './utils/formatter';
 import { icons } from './utils/icons';
 import { initMap, setUserPosition, updateStationMarkers, showRouteLine, removeRouteLine, toggleHeatmap } from './components/Map';
 import { initStationList } from './components/StationList';
-import { initFilterPanel } from './components/FilterPanel';
+import { initFilterOverlay } from './components/FilterPanel';
 import { initSmartCalculator } from './components/SmartCalculator';
-import { createPriceHistoryCard } from './components/PriceHistory';
+import { initBottomSheet } from './components/BottomSheet';
 import { showToast } from './components/Toast';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 
@@ -17,78 +17,91 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null;
 let refreshCountdown = 300;
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
+// Haupt-App aufbauen: Vollbild-Karte + Top-Bar + Bottom Sheet
 function buildApp(): void {
   const app = document.getElementById('app')!;
   app.innerHTML = `
-    <header class="app-header">
-      <div class="logo">
+    <!-- Karte nimmt den gesamten Viewport ein -->
+    <div id="map"></div>
+
+    <!-- Schwebende Top-Bar mit Durchschnittspreis und Aktionen -->
+    <div class="top-bar">
+      <div id="price-ampel" class="top-bar-chip" style="display:none">
         <span class="logo-icon" style="color:var(--fuel-accent)">${icons.fuel}</span>
-        <span class="logo-text">FuelFinder Pro</span>
+        <span id="ampel-text">--</span>
       </div>
 
-      <div class="flex-1"></div>
-
-      <div id="price-ampel" class="header-chip hidden" aria-label="Preisampel"></div>
-      <div id="savings-banner" class="header-chip chip-green hidden"></div>
-
-      <div id="refresh-indicator" class="flex items-center gap-1.5 text-[11px] text-[var(--fuel-text-muted)] flex-shrink-0">
-        <svg class="refresh-ring" viewBox="0 0 32 32">
-          <circle cx="16" cy="16" r="13" stroke-dasharray="81.68" stroke-dashoffset="0" id="refresh-circle" />
+      <div id="refresh-indicator" class="top-bar-chip" style="gap:4px; font-size:11px; font-weight:500; color:var(--fuel-text-secondary)">
+        <svg class="refresh-ring" viewBox="0 0 32 32" width="16" height="16" style="flex-shrink:0">
+          <circle cx="16" cy="16" r="13" fill="none" stroke="var(--fuel-surface-3)" stroke-width="3" />
+          <circle cx="16" cy="16" r="13" fill="none" stroke="var(--fuel-accent)" stroke-width="3"
+            stroke-dasharray="81.68" stroke-dashoffset="0" id="refresh-circle"
+            stroke-linecap="round" transform="rotate(-90 16 16)" />
         </svg>
-        <span id="refresh-text" class="hidden sm:inline">--</span>
+        <span id="refresh-text">--</span>
       </div>
 
-      <div class="header-actions">
-        <button id="btn-refresh" class="header-btn" aria-label="Aktualisieren" title="Preise aktualisieren">
-          ${icons.refresh}
-        </button>
-        <button id="btn-locate" class="header-btn" aria-label="Standort aktualisieren" title="Mein Standort" style="color:var(--fuel-accent)">
-          ${icons.crosshair}
-        </button>
-        <button id="btn-settings" class="header-btn" aria-label="Einstellungen" title="Kalkulator">
-          ${icons.settings}
-        </button>
-      </div>
-    </header>
+      <div style="flex:1"></div>
 
-    <main class="app-main">
-      <aside class="app-sidebar" id="sidebar">
-        <div class="mobile-drawer-handle" aria-hidden="true"></div>
-        <div id="filter-panel"></div>
-        <div id="station-list-wrapper" class="flex-1 flex flex-col overflow-hidden min-h-0"></div>
-        <div id="price-history" class="p-2.5 border-t border-[var(--fuel-border)] flex-shrink-0"></div>
-      </aside>
-      <div class="app-map-container">
-        <div id="map" style="width:100%;height:100%"></div>
-      </div>
-    </main>
+      <button id="btn-filter" class="top-bar-btn" aria-label="Filter" title="Filter">
+        ${icons.settings}
+      </button>
+      <button id="btn-refresh" class="top-bar-btn" aria-label="Aktualisieren" title="Preise aktualisieren">
+        ${icons.refresh}
+      </button>
+      <button id="btn-locate" class="top-bar-btn" aria-label="Standort" title="Mein Standort" style="color:var(--fuel-accent)">
+        ${icons.crosshair}
+      </button>
+      <button id="btn-settings" class="top-bar-btn" aria-label="Kalkulator" title="Smart Kalkulator">
+        ${icons.fuel}
+      </button>
+    </div>
+
+    <!-- Bottom Sheet mit Station-Liste (Mobile: drag, Desktop: Sidebar) -->
+    <div id="bottom-sheet" class="bottom-sheet state-half">
+      <div class="sheet-handle"><div class="sheet-handle-bar"></div></div>
+      <div class="sheet-header" id="sheet-header"></div>
+      <div class="sheet-list" id="station-list-wrapper"></div>
+    </div>
   `;
 
+  // Karte initialisieren
   const mapContainer = document.getElementById('map')!;
   initMap(mapContainer);
 
-  const filterPanel = document.getElementById('filter-panel')!;
-  initFilterPanel(filterPanel);
+  // Bottom Sheet Drag-Gesten
+  const sheet = document.getElementById('bottom-sheet')!;
+  initBottomSheet(sheet);
 
+  // Station-Liste im Sheet
   const listWrapper = document.getElementById('station-list-wrapper')!;
   initStationList(listWrapper);
 
-  const priceHistoryContainer = document.getElementById('price-history')!;
-  priceHistoryContainer.appendChild(createPriceHistoryCard());
+  // Sheet-Header mit Sortier-Pillen
+  renderSheetHeader();
 
+  // Filter-Overlay
+  initFilterOverlay();
+
+  // Smart Kalkulator
   initSmartCalculator();
 
+  // Event-Listener
   document.getElementById('btn-settings')?.addEventListener('click', () => store.toggleCalculator());
   document.getElementById('btn-locate')?.addEventListener('click', locateUser);
   document.getElementById('btn-refresh')?.addEventListener('click', doRefresh);
+  document.getElementById('btn-filter')?.addEventListener('click', openFilter);
 
+  // Store Events
   store.on('positionUpdated', onPositionUpdated);
   store.on('stationSelected', onStationSelected);
   store.on('fuelTypeChanged', onSearchParamsChanged);
   store.on('radiusChanged', onSearchParamsChanged);
   store.on('heatmapToggled', onHeatmapToggled);
   store.on('stationsUpdated', updateAmpel);
+  store.on('sortChanged', renderSheetHeader);
 
+  // Retry nach Fehler
   window.addEventListener('fuelfinder:retry', () => {
     const pos = store.getState().position;
     if (pos) searchStations(pos.lat, pos.lng);
@@ -97,6 +110,36 @@ function buildApp(): void {
   showFirstVisitToast();
   locateUser();
   startRefreshTimer();
+}
+
+// Sheet-Header: Sortier-Pillen rendern
+function renderSheetHeader(): void {
+  const header = document.getElementById('sheet-header');
+  if (!header) return;
+  const state = store.getState();
+  const sortOptions: { key: typeof state.sortBy; label: string }[] = [
+    { key: 'score', label: 'Score' },
+    { key: 'price', label: 'Preis' },
+    { key: 'distance', label: 'Naehe' },
+    { key: 'name', label: 'Name' },
+  ];
+
+  header.innerHTML = sortOptions.map(o =>
+    `<button data-sort="${o.key}" class="pill${o.key === state.sortBy ? ' active' : ''}">${o.label}</button>`
+  ).join('');
+
+  header.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-sort') as typeof state.sortBy;
+      store.setSortBy(key);
+    });
+  });
+}
+
+// Filter-Overlay oeffnen
+function openFilter(): void {
+  const overlay = document.getElementById('filter-overlay');
+  overlay?.classList.add('open');
 }
 
 async function locateUser(): Promise<void> {
@@ -147,8 +190,6 @@ async function searchStations(lat: number, lng: number): Promise<void> {
 function onSearchParamsChanged(): void {
   const pos = store.getState().position;
   if (pos) {
-    const filterPanel = document.getElementById('filter-panel')!;
-    initFilterPanel(filterPanel);
     searchStations(pos.lat, pos.lng);
   }
 }
@@ -233,39 +274,30 @@ function updateRefreshUI(): void {
   }
 }
 
+// Preisampel in der Top-Bar aktualisieren
 function updateAmpel(): void {
   const { smartResults } = store.getState();
   const ampel = document.getElementById('price-ampel');
-  const banner = document.getElementById('savings-banner');
+  const ampelText = document.getElementById('ampel-text');
 
-  if (!ampel || !banner || smartResults.length === 0) return;
+  if (!ampel || !ampelText || smartResults.length === 0) return;
 
   const prices = smartResults.map(r => r.rawPrice);
   const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
 
-  let chipClass: string;
+  // Farbe je nach Preisniveau
+  let dotColor: string;
   if (avg < 1.60) {
-    chipClass = 'chip-green';
+    dotColor = 'var(--fuel-green)';
   } else if (avg < 1.80) {
-    chipClass = 'chip-yellow';
+    dotColor = 'var(--fuel-yellow)';
   } else {
-    chipClass = 'chip-red';
+    dotColor = 'var(--fuel-red)';
   }
 
-  ampel.className = `header-chip ${chipClass}`;
-  ampel.textContent = `Avg ${avg.toFixed(3).replace('.', ',')} EUR`;
-  ampel.classList.remove('hidden');
-
-  const now = new Date().getHours();
-  if ((now >= 14 && now < 18) || now >= 21) {
-    const best = smartResults.find(r => r.recommendation === 'BEST_VALUE');
-    if (best && best.netSavings > 0) {
-      banner.textContent = `Spare ${best.netSavings.toFixed(2).replace('.', ',')} EUR heute`;
-      banner.classList.remove('hidden');
-    }
-  } else {
-    banner.classList.add('hidden');
-  }
+  ampelText.textContent = `${avg.toFixed(3).replace('.', ',')} EUR`;
+  ampelText.style.color = dotColor;
+  ampel.style.display = 'flex';
 }
 
 function showFirstVisitToast(): void {
