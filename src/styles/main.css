@@ -144,27 +144,30 @@ html, body {
   right: 0;
   bottom: 0;
   z-index: 15;
+  height: 85dvh;
   background: var(--fuel-bg);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   box-shadow: var(--fuel-shadow);
   display: flex;
   flex-direction: column;
-  max-height: 85dvh;
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
   touch-action: none;
 }
 
-/* Drei Zustände: peek (nur Handle + 1 Karte), half, full */
+/* Drei Zustände mit festen Positionen vom unteren Rand */
+/* peek: nur Handle sichtbar (48px) */
 .bottom-sheet.state-peek {
-  transform: translateY(calc(100% - 160px));
+  transform: translateY(calc(85dvh - 48px));
 }
 
+/* half: halber Viewport */
 .bottom-sheet.state-half {
-  transform: translateY(calc(100% - 50dvh));
+  transform: translateY(35dvh);
 }
 
+/* full: komplett offen */
 .bottom-sheet.state-full {
   transform: translateY(0);
 }
@@ -736,7 +739,7 @@ button, [role="button"], a, select {
     right: auto;
     bottom: 0;
     width: 380px;
-    max-height: none;
+    height: auto;
     border-radius: 0;
     border-right: 1px solid var(--fuel-border);
     box-shadow: 4px 0 30px rgba(0, 0, 0, 0.3);
