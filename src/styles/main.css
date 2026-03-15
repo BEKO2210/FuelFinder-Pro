@@ -1,3 +1,7 @@
+/* ============================================= */
+/* FuelFinder Pro — Minimalistisches Dark Theme  */
+/* Karte = Vollbild, Bottom Sheet wie Google Maps */
+/* ============================================= */
 @import "tailwindcss";
 
 :root {
@@ -21,162 +25,380 @@
   --fuel-accent-hover: #38bdf8;
   --fuel-radius: 14px;
   --fuel-radius-sm: 10px;
-  --fuel-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --fuel-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --fuel-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   height: 100%;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--fuel-bg);
   color: var(--fuel-text);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* ============================================= */
+/* LAYOUT: Karte nimmt gesamten Viewport ein     */
+/* Top-Bar und Bottom-Sheet schweben darueber     */
+/* ============================================= */
+#app {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
   overflow: hidden;
 }
 
-#app {
-  height: 100%;
-  height: 100dvh;
+/* Karte = 100% vom Viewport */
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ============================================= */
+/* TOP BAR — Schwebendes Overlay                 */
+/* ============================================= */
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: linear-gradient(to bottom, rgba(12, 15, 20, 0.88) 0%, rgba(12, 15, 20, 0.6) 70%, transparent 100%);
+  pointer-events: none;
+}
+
+.top-bar > * {
+  pointer-events: auto;
+}
+
+.top-bar-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(21, 25, 33, 0.7);
+  border: 1px solid var(--fuel-border-light);
+  min-height: auto;
+  min-width: auto;
+}
+
+.top-bar-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(21, 25, 33, 0.7);
+  border: 1px solid var(--fuel-border-light);
+  color: var(--fuel-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.top-bar-btn:hover {
+  background: rgba(28, 34, 45, 0.9);
+  color: var(--fuel-text);
+}
+
+.top-bar-btn:active {
+  transform: scale(0.92);
+}
+
+/* ============================================= */
+/* BOTTOM SHEET — Wie Google Maps                */
+/* ============================================= */
+.bottom-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  background: var(--fuel-bg);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: var(--fuel-shadow);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  max-height: 85dvh;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+  touch-action: none;
 }
 
-/* ========================= */
-/* HEADER                    */
-/* ========================= */
-.app-header {
-  height: 52px;
-  background: var(--fuel-surface);
-  border-bottom: 1px solid var(--fuel-border);
+/* Drei Zustaende: peek (nur Handle + 1 Karte), half, full */
+.bottom-sheet.state-peek {
+  transform: translateY(calc(100% - 160px));
+}
+
+.bottom-sheet.state-half {
+  transform: translateY(calc(100% - 50dvh));
+}
+
+.bottom-sheet.state-full {
+  transform: translateY(0);
+}
+
+.bottom-sheet.dragging {
+  transition: none;
+}
+
+/* Drag Handle */
+.sheet-handle {
   display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 8px;
+  justify-content: center;
+  padding: 10px 0 6px;
+  cursor: grab;
   flex-shrink: 0;
-  z-index: 30;
-  backdrop-filter: blur(12px);
 }
 
-.logo {
+.sheet-handle:active {
+  cursor: grabbing;
+}
+
+.sheet-handle-bar {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Sheet Header (Filter + Sortierung) */
+.sheet-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: -0.02em;
+  gap: 6px;
+  padding: 0 12px 10px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sheet-header::-webkit-scrollbar {
+  display: none;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--fuel-border-light);
+  background: var(--fuel-surface);
+  color: var(--fuel-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: auto;
+  min-width: auto;
+  flex-shrink: 0;
+}
+
+.pill:active {
+  transform: scale(0.96);
+}
+
+.pill.active {
+  background: var(--fuel-accent);
+  color: #fff;
+  border-color: var(--fuel-accent);
+}
+
+.pill select {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 0;
+  min-height: auto;
+  min-width: auto;
+}
+
+/* Station Liste */
+.sheet-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+  overscroll-behavior: contain;
+}
+
+.sheet-list::-webkit-scrollbar {
+  width: 0;
+}
+
+/* ============================================= */
+/* STATION KARTE — Minimalistisch                */
+/* ============================================= */
+.station-card {
+  background: var(--fuel-surface);
+  border: 1px solid var(--fuel-border);
+  border-radius: var(--fuel-radius);
+  padding: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  touch-action: manipulation;
+}
+
+.station-card:active {
+  border-color: var(--fuel-border-light);
+}
+
+.station-card .card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.station-card .card-name {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--fuel-text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.station-card .card-address {
+  font-size: 11px;
+  color: var(--fuel-text-muted);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.station-card .card-dist {
+  font-size: 12px;
+  color: var(--fuel-text-secondary);
+  font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.logo svg {
-  color: var(--fuel-accent);
-}
-
-.header-actions {
+.station-card .card-price-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  margin-top: 10px;
 }
 
-.header-btn {
-  width: 36px;
-  height: 36px;
+.station-card .card-price {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.station-card .card-unit {
+  font-size: 12px;
+  color: var(--fuel-text-muted);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.station-card .card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.btn-route {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
+  gap: 6px;
+  height: 42px;
   border-radius: var(--fuel-radius-sm);
-  color: var(--fuel-text-secondary);
+  background: var(--fuel-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.header-btn:hover {
-  background: var(--fuel-surface-2);
-  color: var(--fuel-text);
+.btn-route:active {
+  transform: scale(0.98);
+  background: var(--fuel-accent-hover);
 }
 
-.header-btn:active {
+.btn-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--fuel-radius-sm);
+  border: 1px solid var(--fuel-border);
+  background: transparent;
+  color: var(--fuel-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon:active {
   transform: scale(0.95);
 }
 
-.header-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.chip-green {
-  background: var(--fuel-green-dim);
-  color: var(--fuel-green);
-}
-
-.chip-yellow {
-  background: var(--fuel-yellow-dim);
+.btn-icon.is-active {
   color: var(--fuel-yellow);
+  border-color: var(--fuel-yellow);
+  background: var(--fuel-yellow-dim);
 }
 
-.chip-red {
-  background: var(--fuel-red-dim);
-  color: var(--fuel-red);
+/* Badge (Beste Wahl / Guenstigste) */
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  min-height: auto;
+  min-width: auto;
 }
 
-/* ========================= */
-/* MAIN LAYOUT               */
-/* ========================= */
-.app-main {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  position: relative;
-}
-
-/* ========================= */
-/* SIDEBAR                   */
-/* ========================= */
-.app-sidebar {
-  width: 380px;
-  display: flex;
-  flex-direction: column;
-  background: var(--fuel-bg);
-  border-right: 1px solid var(--fuel-border);
-  overflow: hidden;
+/* Status-Punkt */
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   flex-shrink: 0;
-  z-index: 20;
 }
 
-.app-map-container {
-  flex: 1;
-  position: relative;
-  min-width: 0;
-}
-
-.app-map-container .maplibregl-map {
-  width: 100%;
-  height: 100%;
-}
-
-/* ========================= */
-/* MAP MARKERS               */
-/* ========================= */
+/* ============================================= */
+/* MAP MARKER — Saubere Preis-Pillen             */
+/* ============================================= */
 .user-marker {
   position: relative;
   width: 22px;
@@ -192,7 +414,7 @@ html, body {
   position: absolute;
   top: 4px;
   left: 4px;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 2px 8px rgba(0, 0, 0, 0.4);
   z-index: 2;
 }
 
@@ -213,49 +435,30 @@ html, body {
   100% { transform: scale(1.4); opacity: 0; }
 }
 
-/* Station marker — floating pill */
 .station-marker {
   cursor: pointer;
-  position: relative;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
-  transition: transform 0.15s ease;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.4));
+  transition: transform 0.12s ease;
 }
 
 .station-marker:hover {
-  transform: scale(1.08);
+  transform: scale(1.1);
   z-index: 10;
 }
 
 .marker-pin {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  border-radius: 20px;
+  padding: 4px 8px;
+  border-radius: 16px;
   color: #fff;
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  position: relative;
+  line-height: 1;
   min-height: auto;
   min-width: auto;
-  line-height: 1;
-}
-
-.marker-price {
-  font-variant-numeric: tabular-nums;
-}
-
-.marker-badge {
-  display: flex;
-  align-items: center;
-  opacity: 0.9;
-}
-
-.marker-badge svg {
-  width: 11px;
-  height: 11px;
+  text-align: center;
 }
 
 .marker-arrow {
@@ -267,258 +470,98 @@ html, body {
   margin: 0 auto;
 }
 
-/* Best value marker glow */
 .marker-best .marker-pin {
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4), 0 0 12px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.5);
 }
 
-/* ========================= */
-/* MAP POPUP                 */
-/* ========================= */
+/* ============================================= */
+/* MAP POPUP                                     */
+/* ============================================= */
 .maplibregl-popup-content {
   background: var(--fuel-surface) !important;
   border: 1px solid var(--fuel-border-light) !important;
-  border-radius: var(--fuel-radius) !important;
-  padding: 14px !important;
-  box-shadow: var(--fuel-shadow) !important;
-  max-width: 260px;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
 .maplibregl-popup-close-button {
   color: var(--fuel-text-muted) !important;
-  font-size: 18px !important;
-  right: 8px !important;
-  top: 8px !important;
-  width: 24px !important;
-  height: 24px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 6px !important;
+  font-size: 16px !important;
+  right: 6px !important;
+  top: 6px !important;
   min-height: auto !important;
   min-width: auto !important;
-}
-
-.maplibregl-popup-close-button:hover {
-  background: var(--fuel-surface-2) !important;
-  color: var(--fuel-text) !important;
 }
 
 .maplibregl-popup-tip {
   border-top-color: var(--fuel-surface) !important;
 }
 
-.station-popup {
-  font-family: inherit;
-  color: var(--fuel-text);
+.station-popup .popup-name { font-size: 13px; font-weight: 600; display: block; min-height: auto; min-width: auto; }
+.station-popup .popup-address { font-size: 11px; color: var(--fuel-text-secondary); margin: 2px 0 0; min-height: auto; min-width: auto; }
+.station-popup .popup-price { font-size: 20px; font-weight: 800; margin: 6px 0 2px; font-variant-numeric: tabular-nums; min-height: auto; min-width: auto; }
+.station-popup .popup-dist { font-size: 11px; color: var(--fuel-text-secondary); min-height: auto; min-width: auto; }
+.popup-badge { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-top: 4px; min-height: auto; min-width: auto; }
+.popup-badge-green { background: var(--fuel-green-dim); color: var(--fuel-green); }
+.popup-badge-gray { background: rgba(255,255,255,0.05); color: var(--fuel-text-muted); }
+
+/* ============================================= */
+/* FILTER OVERLAY                                */
+/* ============================================= */
+.filter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
 }
 
-.station-popup .popup-name {
-  font-size: 14px;
-  font-weight: 600;
+.filter-overlay.open {
   display: block;
-  margin-bottom: 2px;
-  letter-spacing: -0.01em;
 }
 
-.station-popup .popup-address {
-  margin: 0;
-  font-size: 12px;
-  color: var(--fuel-text-secondary);
-  min-height: auto;
-  min-width: auto;
+.filter-overlay .filter-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 
-.station-popup .popup-price {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 8px 0 4px;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  min-height: auto;
-  min-width: auto;
+.filter-overlay .filter-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--fuel-bg);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
 
-.station-popup .popup-dist {
-  font-size: 12px;
-  color: var(--fuel-text-secondary);
-  margin: 0;
-  min-height: auto;
-  min-width: auto;
+/* ============================================= */
+/* KALKULATOR OVERLAY                            */
+/* ============================================= */
+.calc-overlay-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 
-.popup-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 6px;
-  min-height: auto;
-  min-width: auto;
-}
+/* ============================================= */
+/* TOAST                                         */
+/* ============================================= */
+@keyframes toast-in { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes toast-out { from { opacity: 1; } to { opacity: 0; } }
+.animate-slide-in { animation: toast-in 0.2s ease-out; }
+.animate-slide-out { animation: toast-out 0.15s ease-in forwards; }
 
-.popup-badge-green {
-  background: var(--fuel-green-dim);
-  color: var(--fuel-green);
-}
+/* ============================================= */
+/* SCROLLBAR & RANGE                             */
+/* ============================================= */
+::-webkit-scrollbar { width: 0; }
 
-.popup-badge-gray {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--fuel-text-secondary);
-}
-
-.popup-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  margin-left: 6px;
-  min-height: auto;
-  min-width: auto;
-}
-
-.popup-status-open {
-  color: var(--fuel-green);
-}
-
-.popup-status-closed {
-  color: var(--fuel-text-muted);
-}
-
-/* ========================= */
-/* REFRESH RING              */
-/* ========================= */
-.refresh-ring {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.refresh-ring circle {
-  fill: none;
-  stroke: var(--fuel-accent);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: center;
-  opacity: 0.5;
-}
-
-/* ========================= */
-/* TOAST                     */
-/* ========================= */
-@keyframes slide-in {
-  from { transform: translateY(-12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slide-out {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(-12px); opacity: 0; }
-}
-
-.animate-slide-in {
-  animation: slide-in 0.25s ease-out;
-}
-
-.animate-slide-out {
-  animation: slide-out 0.2s ease-in forwards;
-}
-
-/* ========================= */
-/* PRICE FLASH               */
-/* ========================= */
-@keyframes price-flash {
-  0%, 100% { background: transparent; }
-  50% { background: var(--fuel-yellow-dim); }
-}
-
-.price-updated {
-  animation: price-flash 0.8s ease-in-out 2;
-}
-
-/* ========================= */
-/* SCROLLBAR                 */
-/* ========================= */
-::-webkit-scrollbar {
-  width: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-/* ========================= */
-/* MOBILE (< 768px)          */
-/* ========================= */
-@media (max-width: 767px) {
-  .app-header {
-    height: 48px;
-    padding: 0 10px;
-    gap: 6px;
-  }
-
-  .logo .logo-text {
-    display: none;
-  }
-
-  .app-main {
-    flex-direction: column;
-  }
-
-  .app-sidebar {
-    width: 100%;
-    border-right: none;
-    border-top: 1px solid var(--fuel-border);
-    position: relative;
-    flex: 1;
-    min-height: 0;
-  }
-
-  .app-map-container {
-    height: 50dvh;
-    flex-shrink: 0;
-  }
-
-  .mobile-drawer-handle {
-    display: block;
-    width: 36px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 2px;
-    margin: 6px auto 2px;
-    flex-shrink: 0;
-  }
-}
-
-@media (min-width: 768px) {
-  .mobile-drawer-handle {
-    display: none;
-  }
-}
-
-/* Tablet */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .app-sidebar {
-    width: 320px;
-  }
-}
-
-/* ========================= */
-/* RANGE SLIDER              */
-/* ========================= */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -531,66 +574,92 @@ input[type="range"] {
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 20px; height: 20px;
   background: var(--fuel-accent);
   border-radius: 50%;
   cursor: pointer;
   border: 3px solid var(--fuel-bg);
-  box-shadow: 0 0 0 1px var(--fuel-accent), 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px var(--fuel-accent);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 20px; height: 20px;
   background: var(--fuel-accent);
   border-radius: 50%;
   cursor: pointer;
   border: 3px solid var(--fuel-bg);
-  box-shadow: 0 0 0 1px var(--fuel-accent), 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* ========================= */
-/* FOCUS                     */
-/* ========================= */
+/* ============================================= */
+/* FOKUS & TOUCH                                 */
+/* ============================================= */
 *:focus-visible {
   outline: 2px solid var(--fuel-accent);
   outline-offset: 2px;
 }
 
-/* ========================= */
-/* TOUCH TARGETS             */
-/* ========================= */
 button, [role="button"], a, select {
   min-height: 44px;
   min-width: 44px;
 }
 
-.marker-pin, .popup-badge, .station-popup p, .station-popup .popup-name,
-.station-popup .popup-address, .station-popup .popup-dist,
-.popup-status, .header-chip, .sort-btn, .filter-chip,
-.toast-close-btn, label span {
+/* Ausnahmen fuer kleine Elemente */
+.marker-pin, .pill, .sort-btn, .card-badge,
+.popup-badge, .station-popup *, .sheet-handle,
+.toast-close-btn, .top-bar-chip, label span,
+.status-dot, .card-unit, .card-address {
   min-height: auto;
   min-width: auto;
 }
 
-/* ========================= */
-/* UTILITY CLASSES           */
-/* ========================= */
-.glass {
-  background: rgba(21, 25, 33, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+/* ============================================= */
+/* DESKTOP (>= 768px): Sidebar statt Bottom Sheet*/
+/* ============================================= */
+@media (min-width: 768px) {
+  .bottom-sheet {
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: 380px;
+    max-height: none;
+    border-radius: 0;
+    border-right: 1px solid var(--fuel-border);
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.3);
+    transform: none !important;
+  }
+
+  .bottom-sheet.state-peek,
+  .bottom-sheet.state-half,
+  .bottom-sheet.state-full {
+    transform: none !important;
+  }
+
+  .sheet-handle {
+    display: none;
+  }
+
+  .sheet-list {
+    padding-bottom: 20px;
+  }
+
+  #map {
+    left: 380px;
+  }
+
+  .top-bar {
+    left: 380px;
+  }
 }
 
-.card-surface {
-  background: var(--fuel-surface);
-  border: 1px solid var(--fuel-border);
-  border-radius: var(--fuel-radius);
-}
-
-.text-tabular {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+@media (min-width: 1200px) {
+  .bottom-sheet {
+    width: 420px;
+  }
+  #map {
+    left: 420px;
+  }
+  .top-bar {
+    left: 420px;
+  }
 }

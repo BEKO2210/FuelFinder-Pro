@@ -1,40 +1,34 @@
+// Station-Liste — Rendert Karten innerhalb des Bottom Sheets
+// Unterstuetzt: Lazy Loading, Sortierung, Filter, Lade-/Fehlerzustand
+
 import { store } from '../store/AppStore';
 import { createStationCard, createSkeletonCard } from './StationCard';
 import type { SmartResult, SortOption } from '../types';
 import { icons } from '../utils/icons';
 
 let listContainer: HTMLElement | null = null;
-let sortButtons: HTMLElement | null = null;
 let visibleCount = 20;
 
+// Liste im uebergebenen Container initialisieren
 export function initStationList(container: HTMLElement): void {
   container.innerHTML = `
-    <div class="station-list-header flex items-center justify-between px-3 py-2.5 border-b border-[var(--fuel-border)]">
-      <h2 class="text-[13px] font-semibold text-[var(--fuel-text)] tracking-tight">Tankstellen</h2>
-      <div id="sort-buttons" class="flex gap-0.5 bg-[var(--fuel-surface-2)] rounded-lg p-0.5" role="radiogroup" aria-label="Sortierung"></div>
+    <div id="station-list" role="list" aria-label="Tankstellen-Liste"></div>
+    <div id="list-empty" class="hidden" style="padding:40px 20px;text-align:center">
+      <div style="color:var(--fuel-text-muted);margin-bottom:12px">${icons.search}</div>
+      <p style="color:var(--fuel-text);font-weight:600;font-size:14px">Keine Tankstellen gefunden</p>
+      <p style="font-size:12px;color:var(--fuel-text-muted);margin-top:4px">Versuche den Radius zu vergroessern</p>
     </div>
-    <div id="station-list" class="overflow-y-auto flex-1 p-2.5 space-y-2" role="list" aria-label="Tankstellen-Liste"></div>
-    <div id="list-empty" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center">
-      <div class="text-[var(--fuel-text-muted)] mb-3">${icons.search}</div>
-      <p class="text-[var(--fuel-text)] font-semibold text-sm">Keine Tankstellen gefunden</p>
-      <p class="text-[12px] text-[var(--fuel-text-muted)] mt-1">Versuche den Radius zu vergroessern</p>
-    </div>
-    <div id="list-error" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center">
-      <div class="text-[var(--fuel-red)] mb-3">${icons.alertTriangle}</div>
-      <p class="text-[var(--fuel-text)] font-semibold text-sm" id="error-message">Fehler</p>
-      <button id="retry-btn" class="mt-3 px-4 py-2.5 rounded-[var(--fuel-radius-sm)] bg-[var(--fuel-accent)] text-white text-[13px] font-semibold hover:bg-[var(--fuel-accent-hover)] active:scale-[0.98] transition-all">Erneut versuchen</button>
+    <div id="list-error" class="hidden" style="padding:40px 20px;text-align:center">
+      <div style="color:var(--fuel-red);margin-bottom:12px">${icons.alertTriangle}</div>
+      <p style="color:var(--fuel-text);font-weight:600;font-size:14px" id="error-message">Fehler</p>
+      <button id="retry-btn" class="btn-route" style="margin-top:12px;width:auto;padding:0 20px">Erneut versuchen</button>
     </div>
   `;
 
   listContainer = container.querySelector('#station-list');
-  sortButtons = container.querySelector('#sort-buttons');
 
-  renderSortButtons();
-
-  store.on('stationsUpdated', () => {
-    visibleCount = 20;
-    render();
-  });
+  // Store Events abonnieren
+  store.on('stationsUpdated', () => { visibleCount = 20; render(); });
   store.on('sortChanged', render);
   store.on('filterChanged', render);
   store.on('favoritesChanged', render);
@@ -42,31 +36,11 @@ export function initStationList(container: HTMLElement): void {
   store.on('errorChanged', renderErrorState);
   store.on('pricesRefreshed', render);
 
-  listContainer?.addEventListener('scroll', handleScroll);
+  // Lazy Loading bei Scroll
+  container.addEventListener('scroll', handleScroll);
 }
 
-function renderSortButtons(): void {
-  if (!sortButtons) return;
-  const options: { key: SortOption; label: string }[] = [
-    { key: 'score', label: 'Score' },
-    { key: 'price', label: 'Preis' },
-    { key: 'distance', label: 'Naehe' },
-    { key: 'name', label: 'Name' },
-  ];
-
-  sortButtons.innerHTML = options.map(o => {
-    const active = store.getState().sortBy === o.key;
-    return `<button data-sort="${o.key}" role="radio" aria-checked="${active}" class="sort-btn px-2.5 py-1 text-[11px] font-medium rounded-md transition-all ${active ? 'bg-[var(--fuel-accent)] text-white shadow-sm' : 'text-[var(--fuel-text-muted)] hover:text-[var(--fuel-text-secondary)]'}">${o.label}</button>`;
-  }).join('');
-
-  sortButtons.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      store.setSortBy(btn.dataset.sort as SortOption);
-      renderSortButtons();
-    });
-  });
-}
-
+// Stationen rendern
 function render(): void {
   if (!listContainer) return;
   const state = store.getState();
@@ -102,26 +76,29 @@ function render(): void {
     listContainer!.appendChild(card);
   });
 
+  // Hinweis auf weitere Stationen
   if (results.length > visibleCount) {
     const more = document.createElement('div');
-    more.className = 'text-center py-3 text-[11px] text-[var(--fuel-text-muted)]';
+    more.style.cssText = 'text-align:center;padding:12px;font-size:11px;color:var(--fuel-text-muted)';
     more.textContent = `${results.length - visibleCount} weitere Stationen`;
     listContainer.appendChild(more);
   }
 }
 
+// Skeleton-Karten bei Ladevorgang
 function renderLoadingState(): void {
   if (!listContainer) return;
   const state = store.getState();
 
   if (state.isLoading && state.stations.length === 0) {
     listContainer.innerHTML = '';
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       listContainer.appendChild(createSkeletonCard());
     }
   }
 }
 
+// Fehlerzustand anzeigen
 function renderErrorState(): void {
   const state = store.getState();
   const errorEl = listContainer?.parentElement?.querySelector('#list-error');
@@ -137,9 +114,11 @@ function renderErrorState(): void {
   }
 }
 
+// Lazy Loading: Mehr Stationen laden beim Scrollen
 function handleScroll(): void {
-  if (!listContainer) return;
-  const { scrollTop, scrollHeight, clientHeight } = listContainer;
+  const wrapper = listContainer?.parentElement;
+  if (!wrapper) return;
+  const { scrollTop, scrollHeight, clientHeight } = wrapper;
   if (scrollHeight - scrollTop - clientHeight < 100) {
     const state = store.getState();
     const total = getSortedResults(state.smartResults, state.sortBy, state.showOnlyOpen).length;
@@ -150,6 +129,7 @@ function handleScroll(): void {
   }
 }
 
+// Sortierung und Filterung anwenden
 function getSortedResults(results: SmartResult[], sortBy: SortOption, onlyOpen: boolean): SmartResult[] {
   const filtered = onlyOpen ? results.filter(r => r.station.isOpen) : results;
 

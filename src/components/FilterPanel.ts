@@ -1,57 +1,109 @@
+// Filter Overlay — Wird ueber Top-Bar-Button geoeffnet
+// Zeigt: Kraftstoffauswahl, Radius, Nur-Offen-Toggle, Heatmap-Toggle
+
 import type { FuelType } from '../types';
 import { store } from '../store/AppStore';
 import { icons } from '../utils/icons';
 
-export function initFilterPanel(container: HTMLElement): void {
+let overlay: HTMLElement | null = null;
+
+// Filter-Overlay erstellen und an body anhaengen
+export function initFilterOverlay(): void {
+  overlay = document.createElement('div');
+  overlay.id = 'filter-overlay';
+  overlay.className = 'filter-overlay';
+
+  renderOverlay();
+  document.body.appendChild(overlay);
+
+  // Bei Store-Aenderungen neu rendern
+  store.on('fuelTypeChanged', renderOverlay);
+  store.on('filterChanged', renderOverlay);
+  store.on('heatmapToggled', renderOverlay);
+}
+
+// Overlay-Inhalt rendern
+function renderOverlay(): void {
+  if (!overlay) return;
   const state = store.getState();
 
-  container.innerHTML = `
-    <div class="filter-panel flex items-center gap-2 px-3 py-2 border-b border-[var(--fuel-border)] overflow-x-auto scrollbar-none">
-      <div id="fuel-toggle" class="flex bg-[var(--fuel-surface-2)] rounded-lg p-0.5 flex-shrink-0" role="radiogroup" aria-label="Kraftstofftyp">
-        ${fuelButton('e5', 'E5', state.fuelType)}
-        ${fuelButton('e10', 'E10', state.fuelType)}
-        ${fuelButton('diesel', 'Diesel', state.fuelType)}
+  overlay.innerHTML = `
+    <div class="filter-backdrop"></div>
+    <div class="filter-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="font-size:16px;font-weight:700;color:var(--fuel-text)">Filter</h2>
+        <button id="filter-close" class="top-bar-btn" aria-label="Schliessen">${icons.close}</button>
       </div>
 
-      <div class="flex items-center gap-1.5 flex-shrink-0">
-        <select id="radius-select" class="filter-chip bg-[var(--fuel-surface-2)] text-[var(--fuel-text-secondary)] text-[11px] font-medium rounded-lg px-2.5 py-1.5 border border-[var(--fuel-border)] focus:border-[var(--fuel-accent)] focus:outline-none cursor-pointer appearance-none pr-6" aria-label="Suchradius" style="background-image: url('data:image/svg+xml,${encodeURIComponent('<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="%238b95a8" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>')}'); background-repeat: no-repeat; background-position: right 6px center;">
-          ${[1,2,3,5,10,15,20,25].map(r => `<option value="${r}" ${r === state.radius ? 'selected' : ''}>${r} km</option>`).join('')}
-        </select>
+      <!-- Kraftstoff-Auswahl -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:600;display:block;margin-bottom:8px">Kraftstoff</label>
+        <div style="display:flex;gap:6px">
+          ${fuelPill('e5', 'E5', state.fuelType)}
+          ${fuelPill('e10', 'E10', state.fuelType)}
+          ${fuelPill('diesel', 'Diesel', state.fuelType)}
+        </div>
       </div>
 
-      <label class="flex items-center gap-1.5 flex-shrink-0 cursor-pointer select-none">
-        <input type="checkbox" id="only-open" class="w-3.5 h-3.5 rounded accent-[var(--fuel-accent)] cursor-pointer" ${state.showOnlyOpen ? 'checked' : ''} />
-        <span class="text-[11px] text-[var(--fuel-text-secondary)] font-medium">Offen</span>
-      </label>
+      <!-- Radius -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:600;display:block;margin-bottom:8px">Suchradius</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${[1, 2, 3, 5, 10, 15, 25].map(r =>
+            `<button data-radius="${r}" class="pill${r === state.radius ? ' active' : ''}">${r} km</button>`
+          ).join('')}
+        </div>
+      </div>
 
-      <button id="heatmap-toggle" class="filter-chip flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium rounded-lg border transition-all flex-shrink-0 ${state.showHeatmap ? 'bg-[var(--fuel-accent-dim)] text-[var(--fuel-accent)] border-[var(--fuel-accent)]' : 'border-[var(--fuel-border)] text-[var(--fuel-text-muted)] hover:text-[var(--fuel-text-secondary)] hover:border-[var(--fuel-border-light)]'}" aria-label="Heatmap umschalten" aria-pressed="${state.showHeatmap}">
-        ${icons.heatmap} Heatmap
-      </button>
+      <!-- Nur geoeffnete -->
+      <div style="margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="filter-only-open" ${state.showOnlyOpen ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--fuel-accent);cursor:pointer" />
+          <span style="font-size:13px;font-weight:500;color:var(--fuel-text)">Nur geoeffnete Tankstellen</span>
+        </label>
+      </div>
+
+      <!-- Heatmap -->
+      <div>
+        <button id="filter-heatmap" class="pill${state.showHeatmap ? ' active' : ''}" style="width:100%;justify-content:center;padding:10px">
+          ${icons.heatmap} Preis-Heatmap ${state.showHeatmap ? 'an' : 'aus'}
+        </button>
+      </div>
     </div>
   `;
 
-  container.querySelectorAll('[data-fuel]').forEach(btn => {
+  // Event Listener
+  overlay.querySelector('.filter-backdrop')?.addEventListener('click', closeOverlay);
+  overlay.querySelector('#filter-close')?.addEventListener('click', closeOverlay);
+
+  overlay.querySelectorAll('[data-fuel]').forEach(btn => {
     btn.addEventListener('click', () => {
       store.setFuelType(btn.getAttribute('data-fuel') as FuelType);
-      initFilterPanel(container);
     });
   });
 
-  container.querySelector('#radius-select')?.addEventListener('change', (e) => {
-    store.setRadius(parseInt((e.target as HTMLSelectElement).value));
+  overlay.querySelectorAll('[data-radius]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      store.setRadius(parseInt(btn.getAttribute('data-radius')!));
+      renderOverlay();
+    });
   });
 
-  container.querySelector('#only-open')?.addEventListener('change', (e) => {
+  overlay.querySelector('#filter-only-open')?.addEventListener('change', (e) => {
     store.setShowOnlyOpen((e.target as HTMLInputElement).checked);
   });
 
-  container.querySelector('#heatmap-toggle')?.addEventListener('click', () => {
+  overlay.querySelector('#filter-heatmap')?.addEventListener('click', () => {
     store.toggleHeatmap();
-    initFilterPanel(container);
   });
 }
 
-function fuelButton(type: FuelType, label: string, active: FuelType): string {
-  const isActive = type === active;
-  return `<button data-fuel="${type}" role="radio" aria-checked="${isActive}" class="filter-chip px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all ${isActive ? 'bg-[var(--fuel-accent)] text-white shadow-sm' : 'text-[var(--fuel-text-muted)] hover:text-[var(--fuel-text-secondary)]'}">${label}</button>`;
+// Overlay schliessen
+function closeOverlay(): void {
+  overlay?.classList.remove('open');
+}
+
+// Kraftstoff-Pill generieren
+function fuelPill(type: FuelType, label: string, active: FuelType): string {
+  return `<button data-fuel="${type}" class="pill${type === active ? ' active' : ''}" style="flex:1;justify-content:center">${label}</button>`;
 }
