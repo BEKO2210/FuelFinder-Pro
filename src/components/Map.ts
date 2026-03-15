@@ -10,7 +10,6 @@ let userMarker: maplibregl.Marker | null = null;
 let accuracyCircle: maplibregl.Marker | null = null;
 let stationMarkers: maplibregl.Marker[] = [];
 let routeLine: string | null = null;
-let popup: maplibregl.Popup | null = null;
 
 export function initMap(container: HTMLElement): maplibregl.Map {
   map = new maplibregl.Map({
@@ -245,11 +244,6 @@ function fitMapToStations(stations: TKStation[]): void {
   stations.forEach(s => bounds.extend([s.lng, s.lat]));
 
   map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 1000 });
-}
-
-export function closePopup(): void {
-  popup?.remove();
-  popup = null;
 }
 
 export function getMapInstance(): maplibregl.Map | null {
