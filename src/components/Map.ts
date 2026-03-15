@@ -52,8 +52,8 @@ export function setUserPosition(pos: GeoPosition): void {
     if (accuracyCircle) accuracyCircle.remove();
     const el = document.createElement('div');
     const pixelRadius = Math.max(20, pos.accuracy * 0.5);
-    el.style.cssText = `width:${pixelRadius}px;height:${pixelRadius}px;border-radius:50%;background:rgba(14,165,233,0.08);border:1.5px solid rgba(14,165,233,0.15);pointer-events:none;`;
-    accuracyCircle = new maplibregl.Marker({ element: el })
+    el.style.cssText = `width:${pixelRadius}px;height:${pixelRadius}px;border-radius:50%;background:rgba(14,165,233,0.08);border:1.5px solid rgba(14,165,233,0.15);pointer-events:none;transform:translate(-50%,-50%);`;
+    accuracyCircle = new maplibregl.Marker({ element: el, anchor: 'center' })
       .setLngLat([pos.lng, pos.lat])
       .addTo(map);
   }
