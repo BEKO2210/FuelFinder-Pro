@@ -1,5 +1,5 @@
 // Tankerkoenig API — Tankstellenpreise aus Deutschland
-// Unterstuetzt: Vorgeladene Daten (GitHub Actions) + Live-API Fallback
+// Unterstützt: Vorgeladene Daten (GitHub Actions) + Live-API Fallback
 
 import type { TKListResponse, TKPricesResponse, TKDetailResponse, FuelType, TKStation } from '../types';
 
@@ -83,7 +83,7 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Preis fuer gewaehlten Kraftstoff
+// Preis für gewählten Kraftstoff
 function getFuelPrice(
   s: { e5: number | null; e10: number | null; diesel: number | null },
   fuelType: FuelType
@@ -119,7 +119,7 @@ async function apiFetch<T>(path: string, params: Record<string, string>): Promis
   try {
     const res = await fetch(url.toString(), { signal: controller.signal });
     if (res.status === 401 || res.status === 403) {
-      throw new Error('API-Key ungueltig oder nicht gesetzt.');
+      throw new Error('API-Key ungültig oder nicht gesetzt.');
     }
     if (res.status === 429) {
       throw new Error('API Rate-Limit erreicht. Bitte warte einen Moment.');
@@ -134,7 +134,7 @@ async function apiFetch<T>(path: string, params: Record<string, string>): Promis
     return data;
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new Error('Zeitueberschreitung bei der API-Anfrage.');
+      throw new Error('Zeitüberschreitung bei der API-Anfrage.');
     }
     throw err;
   } finally {

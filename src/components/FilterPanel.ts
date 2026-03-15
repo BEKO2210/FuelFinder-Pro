@@ -1,4 +1,4 @@
-// Filter Overlay — Wird ueber Top-Bar-Button geoeffnet
+// Filter Overlay — Wird über Top-Bar-Button geöffnet
 // Zeigt: Kraftstoffauswahl, Radius, Nur-Offen-Toggle, Heatmap-Toggle
 
 import type { FuelType } from '../types';
@@ -16,7 +16,7 @@ export function initFilterOverlay(): void {
   renderOverlay();
   document.body.appendChild(overlay);
 
-  // Bei Store-Aenderungen neu rendern
+  // Bei Store-Änderungen neu rendern
   store.on('fuelTypeChanged', renderOverlay);
   store.on('filterChanged', renderOverlay);
   store.on('heatmapToggled', renderOverlay);
@@ -32,7 +32,7 @@ function renderOverlay(): void {
     <div class="filter-panel">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h2 style="font-size:16px;font-weight:700;color:var(--fuel-text)">Filter</h2>
-        <button id="filter-close" class="top-bar-btn" aria-label="Schliessen">${icons.close}</button>
+        <button id="filter-close" class="top-bar-btn" aria-label="Schließen">${icons.close}</button>
       </div>
 
       <!-- Kraftstoff-Auswahl -->
@@ -55,11 +55,11 @@ function renderOverlay(): void {
         </div>
       </div>
 
-      <!-- Nur geoeffnete -->
+      <!-- Nur geöffnete -->
       <div style="margin-bottom:16px">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
           <input type="checkbox" id="filter-only-open" ${state.showOnlyOpen ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--fuel-accent);cursor:pointer" />
-          <span style="font-size:13px;font-weight:500;color:var(--fuel-text)">Nur geoeffnete Tankstellen</span>
+          <span style="font-size:13px;font-weight:500;color:var(--fuel-text)">Nur geöffnete Tankstellen</span>
         </label>
       </div>
 
@@ -98,7 +98,7 @@ function renderOverlay(): void {
   });
 }
 
-// Overlay schliessen
+// Overlay schließen
 function closeOverlay(): void {
   overlay?.classList.remove('open');
 }

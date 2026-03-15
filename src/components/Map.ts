@@ -104,7 +104,7 @@ export function updateStationMarkers(results: SmartResult[]): void {
       : `<span class="popup-badge popup-badge-gray">Kein Vorteil</span>`;
 
     const statusText = station.isOpen
-      ? '<span class="popup-status popup-status-open">Geoeffnet</span>'
+      ? '<span class="popup-status popup-status-open">Geöffnet</span>'
       : '<span class="popup-status popup-status-closed">Geschlossen</span>';
 
     const stationPopup = new maplibregl.Popup({ offset: 25, closeButton: true, maxWidth: '260px' })
@@ -118,7 +118,7 @@ export function updateStationMarkers(results: SmartResult[]): void {
         </div>
       `);
 
-    const marker = new maplibregl.Marker({ element: el })
+    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
       .setLngLat([station.lng, station.lat])
       .setPopup(stationPopup)
       .addTo(map!);

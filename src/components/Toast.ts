@@ -49,7 +49,7 @@ export function showToast(
   toast.innerHTML = `
     <span style="color:${config.iconColor};flex-shrink:0">${config.icon()}</span>
     <span style="flex:1;line-height:1.4">${message}</span>
-    <button class="toast-close-btn" aria-label="Schliessen" style="margin-left:4px;opacity:0.4;cursor:pointer;background:none;border:none;color:var(--fuel-text-secondary);transition:opacity 0.15s;flex-shrink:0">${icons.x}</button>
+    <button class="toast-close-btn" aria-label="Schließen" style="margin-left:4px;opacity:0.4;cursor:pointer;background:none;border:none;color:var(--fuel-text-secondary);transition:opacity 0.15s;flex-shrink:0">${icons.x}</button>
   `;
 
   const closeBtn = toast.querySelector('.toast-close-btn')!;
