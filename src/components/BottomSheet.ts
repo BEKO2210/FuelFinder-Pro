@@ -4,7 +4,7 @@
 type SheetState = 'peek' | 'half' | 'full';
 
 let sheet: HTMLElement | null = null;
-let currentState: SheetState = 'half';
+let currentState: SheetState = 'peek';
 let startY = 0;
 let startTranslate = 0;
 let isDragging = false;
@@ -30,17 +30,15 @@ export function initBottomSheet(el: HTMLElement): void {
   document.addEventListener('mouseup', onMouseUp);
 }
 
-// Klick-Toggle: peek <-> half <-> full
+// Klick-Toggle: peek <-> half (ein Klick hoch, ein Klick runter)
 function onHandleClick(): void {
   // Nur toggeln wenn kein Drag stattfand
   if (dragDistance > 10) return;
 
   if (currentState === 'peek') {
     setSheetState('half');
-  } else if (currentState === 'half') {
-    setSheetState('full');
   } else {
-    setSheetState('half');
+    setSheetState('peek');
   }
 }
 

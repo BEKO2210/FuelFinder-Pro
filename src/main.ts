@@ -9,7 +9,7 @@ import { initMap, setUserPosition, updateStationMarkers, showRouteLine, removeRo
 import { initStationList } from './components/StationList';
 import { initFilterOverlay } from './components/FilterPanel';
 import { initSmartCalculator } from './components/SmartCalculator';
-import { initBottomSheet } from './components/BottomSheet';
+import { initBottomSheet, setSheetState, getSheetState } from './components/BottomSheet';
 import { showToast } from './components/Toast';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 
@@ -60,7 +60,7 @@ function buildApp(): void {
     </div>
 
     <!-- Bottom Sheet mit Station-Liste (Mobile: drag, Desktop: Sidebar) -->
-    <div id="bottom-sheet" class="bottom-sheet state-half">
+    <div id="bottom-sheet" class="bottom-sheet state-peek">
       <div class="sheet-handle"><div class="sheet-handle-bar"></div></div>
       <div class="sheet-header" id="sheet-header"></div>
       <div class="sheet-list" id="station-list-wrapper"></div>
@@ -108,6 +108,9 @@ function buildApp(): void {
     const pos = store.getState().position;
     if (pos) searchStations(pos.lat, pos.lng);
   });
+
+  // Sofort Ladezustand setzen damit Skeletons angezeigt werden
+  store.setLoading(true);
 
   showFirstVisitToast();
   locateUser();
@@ -216,6 +219,12 @@ async function searchStations(lat: number, lng: number): Promise<void> {
     const results = calculateSmartResults(stations, userProfile);
     store.setSmartResults(results);
     updateStationMarkers(results);
+
+    // Sheet hochfahren wenn noch im peek-Zustand
+    if (getSheetState() === 'peek') {
+      setSheetState('half');
+    }
+
     showToast(`${stations.length} Tankstellen gefunden`, 'success', 2000);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unbekannter Fehler';
