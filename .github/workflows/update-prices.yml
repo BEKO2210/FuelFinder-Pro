@@ -15,6 +15,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: price-update
+  cancel-in-progress: true
+
 jobs:
   fetch-prices:
     runs-on: ubuntu-latest
