@@ -47,7 +47,7 @@ html, body {
 
 /* ============================================= */
 /* LAYOUT: Karte nimmt gesamten Viewport ein     */
-/* Top-Bar und Bottom-Sheet schweben darueber     */
+/* Top-Bar und Bottom-Sheet schweben darüber     */
 /* ============================================= */
 #app {
   position: relative;
@@ -156,7 +156,7 @@ html, body {
   touch-action: none;
 }
 
-/* Drei Zustaende: peek (nur Handle + 1 Karte), half, full */
+/* Drei Zustände: peek (nur Handle + 1 Karte), half, full */
 .bottom-sheet.state-peek {
   transform: translateY(calc(100% - 160px));
 }
@@ -419,7 +419,7 @@ html, body {
   background: var(--fuel-yellow-dim);
 }
 
-/* Badge (Beste Wahl / Guenstigste) */
+/* Badge (Beste Wahl / Günstigste) */
 .card-badge {
   display: inline-flex;
   align-items: center;
@@ -696,7 +696,7 @@ button, [role="button"], a, select {
   min-width: 44px;
 }
 
-/* Ausnahmen fuer kleine interaktive Elemente */
+/* Ausnahmen für kleine interaktive Elemente */
 .marker-pin, .marker-price, .marker-badge,
 .pill, .sort-btn, .card-badge,
 .popup-badge, .popup-status, .station-popup *,

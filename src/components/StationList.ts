@@ -1,5 +1,5 @@
 // Station-Liste — Rendert Karten innerhalb des Bottom Sheets
-// Unterstuetzt: Lazy Loading, Sortierung, Filter, Lade-/Fehlerzustand
+// Unterstützt: Lazy Loading, Sortierung, Filter, Lade-/Fehlerzustand
 
 import { store } from '../store/AppStore';
 import { createStationCard, createSkeletonCard } from './StationCard';
@@ -9,14 +9,14 @@ import { icons } from '../utils/icons';
 let listContainer: HTMLElement | null = null;
 let visibleCount = 20;
 
-// Liste im uebergebenen Container initialisieren
+// Liste im übergebenen Container initialisieren
 export function initStationList(container: HTMLElement): void {
   container.innerHTML = `
     <div id="station-list" role="list" aria-label="Tankstellen-Liste"></div>
     <div id="list-empty" class="hidden" style="padding:40px 20px;text-align:center">
       <div style="color:var(--fuel-text-muted);margin-bottom:12px">${icons.search}</div>
       <p style="color:var(--fuel-text);font-weight:600;font-size:14px">Keine Tankstellen gefunden</p>
-      <p style="font-size:12px;color:var(--fuel-text-muted);margin-top:4px">Versuche den Radius zu vergroessern</p>
+      <p style="font-size:12px;color:var(--fuel-text-muted);margin-top:4px">Versuche den Radius zu vergrößern</p>
     </div>
     <div id="list-error" class="hidden" style="padding:40px 20px;text-align:center">
       <div style="color:var(--fuel-red);margin-bottom:12px">${icons.alertTriangle}</div>

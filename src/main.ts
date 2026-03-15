@@ -13,7 +13,7 @@ import { initBottomSheet } from './components/BottomSheet';
 import { showToast } from './components/Toast';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 
-// Auto-Refresh alle 15 Minuten (Daten werden stuendlich von GitHub Actions aktualisiert)
+// Auto-Refresh alle 15 Minuten (Daten werden stündlich von GitHub Actions aktualisiert)
 const REFRESH_INTERVAL = 15 * 60 * 1000;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 let refreshCountdown = 900; // 15 Minuten in Sekunden
@@ -122,7 +122,7 @@ function renderSheetHeader(): void {
   const sortOptions: { key: typeof state.sortBy; label: string }[] = [
     { key: 'score', label: 'Score' },
     { key: 'price', label: 'Preis' },
-    { key: 'distance', label: 'Naehe' },
+    { key: 'distance', label: 'Nähe' },
     { key: 'name', label: 'Name' },
   ];
 
@@ -138,7 +138,7 @@ function renderSheetHeader(): void {
   });
 }
 
-// Filter-Overlay oeffnen
+// Filter-Overlay öffnen
 function openFilter(): void {
   const overlay = document.getElementById('filter-overlay');
   overlay?.classList.add('open');
@@ -150,7 +150,7 @@ async function locateUser(): Promise<void> {
     store.setPosition(pos);
     setUserPosition(pos);
   } catch {
-    showToast('GPS nicht verfuegbar, verwende IP-Standort', 'warning');
+    showToast('GPS nicht verfügbar, verwende IP-Standort', 'warning');
     try {
       const pos = await getPositionByIP();
       store.setPosition(pos);
@@ -199,7 +199,7 @@ async function searchStations(lat: number, lng: number): Promise<void> {
         const response = await fetchStations(lat, lng, radius, fuelType);
         stations = response.stations;
       } catch (apiErr) {
-        // Wenn auch API fehlschlaegt und wir Cache-Daten haben, groesseren Radius probieren
+        // Wenn auch API fehlschlägt und wir Cache-Daten haben, größeren Radius probieren
         if (cached && cached.stations.length > 0) {
           stations = filterCachedStations(cached, lat, lng, Math.min(radius * 2, 25), fuelType);
           if (stations.length > 0) {

@@ -1,6 +1,6 @@
 # =============================================================
-# Stuendlicher Preis-Update via Tankerkoenig API
-# 4 Staedte × 24h = 96 API-Aufrufe/Tag (Limit: 100)
+# Stündlicher Preis-Update via Tankerkönig API
+# 4 Städte × 24h = 96 API-Aufrufe/Tag (Limit: 100)
 # Committed die neuen Daten → triggert automatisch deploy.yml
 # =============================================================
 
@@ -37,9 +37,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/data/stations.json
-          # Nur committen wenn sich Daten geaendert haben
+          # Nur committen wenn sich Daten geändert haben
           if git diff --cached --quiet; then
-            echo "Keine Aenderungen, ueberspringe Commit"
+            echo "Keine Änderungen, überspringe Commit"
           else
             git commit -m "chore: Preise aktualisiert [$(date -u +'%Y-%m-%d %H:%M UTC')]"
             git push

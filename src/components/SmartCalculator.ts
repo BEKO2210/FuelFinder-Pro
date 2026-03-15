@@ -1,5 +1,5 @@
 // Smart Kalkulator — Berechnet Tankkosten und Ersparnis
-// Wird als Overlay ueber dem Bottom Sheet geoeffnet
+// Wird als Overlay über dem Bottom Sheet geöffnet
 
 import { store } from '../store/AppStore';
 import { formatEuro } from '../utils/formatter';
@@ -17,7 +17,7 @@ export function initSmartCalculator(): void {
     <div class="filter-panel" style="max-height:85dvh;overflow-y:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h2 style="font-size:16px;font-weight:700;color:var(--fuel-text)">Smart Kalkulator</h2>
-        <button id="calc-close" class="top-bar-btn" aria-label="Schliessen">${icons.close}</button>
+        <button id="calc-close" class="top-bar-btn" aria-label="Schließen">${icons.close}</button>
       </div>
       <div id="calc-body"></div>
     </div>
@@ -60,10 +60,10 @@ function renderCalcBody(): void {
     <div style="display:flex;flex-direction:column;gap:16px">
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Tankgroesse</label>
+          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Tankgröße</label>
           <span style="font-size:13px;font-weight:700;color:var(--fuel-text);font-variant-numeric:tabular-nums">${userProfile.tankVolume} L</span>
         </div>
-        <input type="range" min="20" max="120" step="1" value="${userProfile.tankVolume}" id="calc-volume" aria-label="Tankgroesse in Litern" />
+        <input type="range" min="20" max="120" step="1" value="${userProfile.tankVolume}" id="calc-volume" aria-label="Tankgröße in Litern" />
       </div>
 
       <div>
@@ -76,10 +76,10 @@ function renderCalcBody(): void {
 
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Fuellstand</label>
+          <label style="font-size:12px;color:var(--fuel-text-secondary);font-weight:500">Füllstand</label>
           <span style="font-size:13px;font-weight:700;color:var(--fuel-text);font-variant-numeric:tabular-nums">${userProfile.currentFillPercent}%</span>
         </div>
-        <input type="range" min="0" max="100" step="5" value="${userProfile.currentFillPercent}" id="calc-fill" aria-label="Aktueller Fuellstand" />
+        <input type="range" min="0" max="100" step="5" value="${userProfile.currentFillPercent}" id="calc-fill" aria-label="Aktueller Füllstand" />
         <div style="margin-top:6px;height:5px;background:var(--fuel-surface-3);border-radius:3px;overflow:hidden">
           <div style="height:100%;background:var(--fuel-accent);border-radius:3px;transition:width 0.2s;width:${userProfile.currentFillPercent}%"></div>
         </div>

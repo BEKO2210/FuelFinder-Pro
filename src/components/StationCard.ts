@@ -1,4 +1,4 @@
-// Minimalistsche Station-Karte fuer das Bottom Sheet
+// Minimalistsche Station-Karte für das Bottom Sheet
 // Zeigt: Name, Adresse, Preis gross, Entfernung, Status, Route-Button
 
 import type { SmartResult } from '../types';
@@ -11,7 +11,7 @@ export function createStationCard(result: SmartResult): HTMLElement {
   const state = store.getState();
   const isFavorite = state.favorites.includes(station.id);
 
-  // Min/Max fuer Farbberechnung
+  // Min/Max für Farbberechnung
   const prices = state.smartResults.map(r => r.rawPrice);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
@@ -23,7 +23,7 @@ export function createStationCard(result: SmartResult): HTMLElement {
   card.setAttribute('tabindex', '0');
   card.setAttribute('aria-label', `${station.name}, ${formatPriceLarge(rawPrice)} Euro pro Liter`);
 
-  // Badge fuer Beste Wahl / Guenstigste
+  // Badge für Beste Wahl / Günstigste
   const badgeHtml = getBadgeHtml(recommendation);
 
   // Ersparnis-Anzeige
@@ -110,15 +110,15 @@ function getBadgeHtml(rec: string): string {
     case 'BEST_VALUE':
       return `<span class="card-badge" style="background:var(--fuel-accent-dim);color:var(--fuel-accent)">${icons.trophy} Beste Wahl</span>`;
     case 'CHEAPEST':
-      return `<span class="card-badge" style="background:var(--fuel-green-dim);color:var(--fuel-green)">${icons.tag} Guenstigste</span>`;
+      return `<span class="card-badge" style="background:var(--fuel-green-dim);color:var(--fuel-green)">${icons.tag} Günstigste</span>`;
     case 'CLOSEST':
-      return `<span class="card-badge" style="background:var(--fuel-accent-dim);color:var(--fuel-accent)">${icons.mapPin} Naechste</span>`;
+      return `<span class="card-badge" style="background:var(--fuel-accent-dim);color:var(--fuel-accent)">${icons.mapPin} Nächste</span>`;
     default:
       return '';
   }
 }
 
-// Externe Navigation oeffnen
+// Externe Navigation öffnen
 function openNavigation(lat: number, lng: number): void {
   const ua = navigator.userAgent.toLowerCase();
   if (ua.includes('iphone') || ua.includes('ipad')) {

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // =============================================================
-// Tankstellenpreise von der Tankerkoenig API holen
-// Wird stuendlich von GitHub Actions ausgefuehrt
+// Tankstellenpreise von der Tankerkönig API holen
+// Wird stündlich von GitHub Actions ausgeführt
 //
-// Strategie: 4 Grossstaedte × 25km Radius = 4 API-Aufrufe/Stunde
+// Strategie: 4 Großstädte × 25km Radius = 4 API-Aufrufe/Stunde
 // 4 × 24h = 96 Aufrufe/Tag (Limit: 100)
 // =============================================================
 
@@ -13,32 +13,32 @@ import { join } from 'path';
 const API_KEY = process.env.TANKERKOENIG_API_KEY;
 const BASE_URL = 'https://creativecommons.tankerkoenig.de/json';
 
-// 4 Grossstaedte decken die wichtigsten Ballungsraeume ab
+// 4 Großstädte decken die wichtigsten Ballungsräume ab
 const CITIES = [
   { name: 'Berlin',    lat: 52.520, lng: 13.405 },
-  { name: 'Muenchen',  lat: 48.137, lng: 11.576 },
+  { name: 'München',   lat: 48.137, lng: 11.576 },
   { name: 'Frankfurt', lat: 50.110, lng: 8.682  },
   { name: 'Hamburg',   lat: 53.551, lng: 9.994  },
 ];
 
 const RADIUS = 25; // km — Maximaler Suchradius
 
-// Tankstellen fuer eine Stadt abrufen
+// Tankstellen für eine Stadt abrufen
 async function fetchCity(city) {
   const url = `${BASE_URL}/list.php?lat=${city.lat}&lng=${city.lng}&rad=${RADIUS}&sort=dist&type=all&apikey=${API_KEY}`;
 
   const res = await fetch(url);
   if (res.status === 429) {
-    console.warn(`  Rate-Limit erreicht bei ${city.name}, ueberspringe`);
+    console.warn(`  Rate-Limit erreicht bei ${city.name}, überspringe`);
     return [];
   }
   if (!res.ok) {
-    throw new Error(`API Fehler ${res.status} fuer ${city.name}`);
+    throw new Error(`API Fehler ${res.status} für ${city.name}`);
   }
 
   const data = await res.json();
   if (!data.ok) {
-    throw new Error(`API Antwort-Fehler fuer ${city.name}: ${data.message}`);
+    throw new Error(`API Antwort-Fehler für ${city.name}: ${data.message}`);
   }
 
   return data.stations || [];
@@ -52,7 +52,7 @@ function loadExisting(filePath) {
       return JSON.parse(raw);
     }
   } catch {
-    // Datei beschaedigt oder nicht vorhanden
+    // Datei beschädigt oder nicht vorhanden
   }
   return null;
 }
@@ -67,11 +67,11 @@ async function main() {
   const outFile = join(outDir, 'stations.json');
   mkdirSync(outDir, { recursive: true });
 
-  // Bestehende Daten laden fuer Merge
+  // Bestehende Daten laden für Merge
   const existing = loadExisting(outFile);
   const stationMap = new Map();
 
-  // Alte Stationen behalten (werden bei Neufetch ueberschrieben)
+  // Alte Stationen behalten (werden bei Neufetch überschrieben)
   if (existing?.stations) {
     existing.stations.forEach(s => stationMap.set(s.id, s));
   }
@@ -80,14 +80,14 @@ async function main() {
   let totalNew = 0;
 
   for (const city of CITIES) {
-    console.log(`Hole Tankstellen fuer ${city.name}...`);
+    console.log(`Hole Tankstellen für ${city.name}...`);
     try {
       const stations = await fetchCity(city);
       apiCalls++;
       let newCount = 0;
 
       stations.forEach(s => {
-        // Nur offene Stationen mit gueltigem Preis speichern
+        // Nur offene Stationen mit gültigem Preis speichern
         if (s.e5 || s.e10 || s.diesel) {
           stationMap.set(s.id, {
             id: s.id,

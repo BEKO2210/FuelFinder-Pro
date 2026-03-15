@@ -1,5 +1,5 @@
 // Bottom Sheet Komponente mit Touch-Drag-Gesten und Klick-Toggle
-// Drei Zustaende: peek (nur Handle sichtbar), half (halber Viewport), full (komplett offen)
+// Drei Zustände: peek (nur Handle sichtbar), half (halber Viewport), full (komplett offen)
 
 type SheetState = 'peek' | 'half' | 'full';
 
@@ -19,12 +19,12 @@ export function initBottomSheet(el: HTMLElement): void {
   // Klick auf Handle = Toggle zwischen half und peek
   handle.addEventListener('click', onHandleClick);
 
-  // Touch Events fuer Mobile Drag
+  // Touch Events für Mobile Drag
   handle.addEventListener('touchstart', onTouchStart as EventListener, { passive: true });
   document.addEventListener('touchmove', onTouchMove as EventListener, { passive: false });
   document.addEventListener('touchend', onTouchEnd);
 
-  // Mouse Events fuer Desktop Drag
+  // Mouse Events für Desktop Drag
   handle.addEventListener('mousedown', onMouseDown as EventListener);
   document.addEventListener('mousemove', onMouseMove as EventListener);
   document.addEventListener('mouseup', onMouseUp);
@@ -120,7 +120,7 @@ function getCurrentTranslateY(): number {
   return matrix.m42;
 }
 
-// Naechsten Zustand bestimmen basierend auf aktueller Position
+// Nächsten Zustand bestimmen basierend auf aktueller Position
 function resolveState(): void {
   if (!sheet) return;
   const viewportHeight = window.innerHeight;

@@ -10,9 +10,9 @@ export function createPriceHistoryCard(): HTMLElement {
   const segments = [
     { start: 6, end: 10, label: '6-10', level: 'high', color: '#f87171', text: 'Teuer (+2-4ct)' },
     { start: 10, end: 14, label: '10-14', level: 'mid', color: '#fbbf24', text: 'Mittel' },
-    { start: 14, end: 18, label: '14-18', level: 'low', color: '#34d399', text: 'Guenstig (-1-3ct)' },
+    { start: 14, end: 18, label: '14-18', level: 'low', color: '#34d399', text: 'Günstig (-1-3ct)' },
     { start: 18, end: 21, label: '18-21', level: 'high', color: '#f87171', text: 'Abend (+1-2ct)' },
-    { start: 21, end: 24, label: '21-24', level: 'low', color: '#34d399', text: 'Nacht-Guenstig' },
+    { start: 21, end: 24, label: '21-24', level: 'low', color: '#34d399', text: 'Nacht-Günstig' },
   ];
 
   const currentSegment = segments.find(s => currentHour >= s.start && currentHour < s.end);
@@ -35,8 +35,8 @@ export function createPriceHistoryCard(): HTMLElement {
   const tipColor = isGoodTime ? 'var(--fuel-green)' : 'var(--fuel-yellow)';
   const tipBg = isGoodTime ? 'var(--fuel-green-dim)' : 'var(--fuel-yellow-dim)';
   const tipText = isGoodTime
-    ? 'Jetzt tanken -- aktuell guenstige Tageszeit.'
-    : 'Tipp: Zwischen 14-18 Uhr und ab 21 Uhr meist guenstiger.';
+    ? 'Jetzt tanken -- aktuell günstige Tageszeit.'
+    : 'Tipp: Zwischen 14-18 Uhr und ab 21 Uhr meist günstiger.';
 
   card.innerHTML = `
     <h3 class="text-[12px] font-semibold text-[var(--fuel-text)] mb-2 tracking-tight">Preisentwicklung heute</h3>
