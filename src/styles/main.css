@@ -454,8 +454,8 @@ html, body {
 /* ============================================= */
 .user-marker {
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: 44px;
+  height: 44px;
 }
 
 .user-marker-dot {
@@ -465,8 +465,9 @@ html, body {
   border: 2.5px solid #fff;
   border-radius: 50%;
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 2px 8px rgba(0, 0, 0, 0.4);
   z-index: 2;
 }
@@ -477,8 +478,8 @@ html, body {
   background: rgba(14, 165, 233, 0.2);
   border-radius: 50%;
   position: absolute;
-  top: -11px;
-  left: -11px;
+  top: 0;
+  left: 0;
   animation: pulse-ring 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
   z-index: 1;
 }
