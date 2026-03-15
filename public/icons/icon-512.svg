@@ -1,0 +1,7 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+    <rect width='512' height='512' rx='76.8' fill='#0f172a'/>
+    <circle cx='256' cy='194.56' r='112.64' fill='#6366f1'/>
+    <path d='M256 76.8 C179.2 76.8 128 143.36 128 215.04 C128 317.44 256 419.84 256 419.84 S384 317.44 384 215.04 C384 143.36 332.8 76.8 256 76.8Z' fill='#6366f1'/>
+    <circle cx='256' cy='204.8' r='40.96' fill='white'/>
+    <text x='256' y='471.04' text-anchor='middle' fill='#f1f5f9' font-family='sans-serif' font-size='51.2' font-weight='bold'>FuelFinder</text>
+  </svg>
