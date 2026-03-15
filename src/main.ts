@@ -4,6 +4,7 @@ import { fetchStations, refreshPrices } from './api/tankerkoenig';
 import { calculateSmartResults } from './utils/calculator';
 import { getCurrentPosition, getPositionByIP } from './utils/geo';
 import { formatTimeAgo } from './utils/formatter';
+import { icons } from './utils/icons';
 import { initMap, setUserPosition, updateStationMarkers, showRouteLine, removeRouteLine, toggleHeatmap } from './components/Map';
 import { initStationList } from './components/StationList';
 import { initFilterPanel } from './components/FilterPanel';
@@ -21,34 +22,41 @@ function buildApp(): void {
   app.innerHTML = `
     <header class="app-header">
       <div class="logo">
-        <span class="logo-icon">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--fuel-accent)">
-            <path d="M12 2C8 2 6 5 6 9c0 5 6 13 6 13s6-8 6-13c0-4-2-7-6-7z"/>
-            <circle cx="12" cy="9" r="2.5" fill="var(--fuel-accent)" stroke="none"/>
-          </svg>
-        </span>
-        <span>FuelFinder Pro</span>
+        <span class="logo-icon" style="color:var(--fuel-accent)">${icons.fuel}</span>
+        <span class="logo-text">FuelFinder Pro</span>
       </div>
+
       <div class="flex-1"></div>
-      <div id="price-ampel" class="text-xs px-2 py-1 rounded-lg bg-[var(--fuel-surface-2)] hidden" aria-label="Preisampel"></div>
-      <div id="savings-banner" class="text-xs px-2 py-1 rounded-lg bg-green-500/10 text-green-400 hidden"></div>
-      <div id="refresh-indicator" class="flex items-center gap-1.5 text-xs text-[var(--fuel-text-muted)]">
+
+      <div id="price-ampel" class="header-chip hidden" aria-label="Preisampel"></div>
+      <div id="savings-banner" class="header-chip chip-green hidden"></div>
+
+      <div id="refresh-indicator" class="flex items-center gap-1.5 text-[11px] text-[var(--fuel-text-muted)] flex-shrink-0">
         <svg class="refresh-ring" viewBox="0 0 32 32">
           <circle cx="16" cy="16" r="13" stroke-dasharray="81.68" stroke-dashoffset="0" id="refresh-circle" />
         </svg>
-        <span id="refresh-text">—</span>
+        <span id="refresh-text" class="hidden sm:inline">--</span>
       </div>
-      <button id="btn-refresh" class="map-overlay-btn" style="min-height:36px;min-width:36px;width:36px;height:36px" aria-label="Aktualisieren" title="Preise aktualisieren">🔄</button>
-      <button id="btn-locate" class="map-overlay-btn" style="min-height:36px;min-width:36px;width:36px;height:36px;color:var(--fuel-blue)" aria-label="Standort aktualisieren" title="Mein Standort">📍</button>
-      <button id="btn-settings" class="map-overlay-btn" style="min-height:36px;min-width:36px;width:36px;height:36px" aria-label="Einstellungen öffnen" title="Kalkulator">⚙️</button>
+
+      <div class="header-actions">
+        <button id="btn-refresh" class="header-btn" aria-label="Aktualisieren" title="Preise aktualisieren">
+          ${icons.refresh}
+        </button>
+        <button id="btn-locate" class="header-btn" aria-label="Standort aktualisieren" title="Mein Standort" style="color:var(--fuel-accent)">
+          ${icons.crosshair}
+        </button>
+        <button id="btn-settings" class="header-btn" aria-label="Einstellungen" title="Kalkulator">
+          ${icons.settings}
+        </button>
+      </div>
     </header>
 
     <main class="app-main">
       <aside class="app-sidebar" id="sidebar">
         <div class="mobile-drawer-handle" aria-hidden="true"></div>
         <div id="filter-panel"></div>
-        <div id="station-list-wrapper" class="flex-1 flex flex-col overflow-hidden"></div>
-        <div id="price-history" class="p-3 border-t border-[var(--fuel-border)]"></div>
+        <div id="station-list-wrapper" class="flex-1 flex flex-col overflow-hidden min-h-0"></div>
+        <div id="price-history" class="p-2.5 border-t border-[var(--fuel-border)] flex-shrink-0"></div>
       </aside>
       <div class="app-map-container">
         <div id="map" style="width:100%;height:100%"></div>
@@ -97,13 +105,13 @@ async function locateUser(): Promise<void> {
     store.setPosition(pos);
     setUserPosition(pos);
   } catch {
-    showToast('GPS nicht verfügbar. Verwende IP-Standort...', 'warning');
+    showToast('GPS nicht verfuegbar, verwende IP-Standort', 'warning');
     try {
       const pos = await getPositionByIP();
       store.setPosition(pos);
       setUserPosition(pos);
     } catch {
-      showToast('Standort konnte nicht ermittelt werden. Klicke auf die Karte, um einen Ort zu wählen.', 'error');
+      showToast('Standort nicht ermittelbar. Klicke auf die Karte.', 'error');
     }
   }
 }
@@ -221,7 +229,7 @@ function updateRefreshUI(): void {
     const state = store.getState();
     text.textContent = state.lastUpdated
       ? formatTimeAgo(state.lastUpdated)
-      : '—';
+      : '--';
   }
 }
 
@@ -235,23 +243,24 @@ function updateAmpel(): void {
   const prices = smartResults.map(r => r.rawPrice);
   const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
 
-  let emoji: string;
+  let chipClass: string;
   if (avg < 1.60) {
-    emoji = '🟢';
+    chipClass = 'chip-green';
   } else if (avg < 1.80) {
-    emoji = '🟡';
+    chipClass = 'chip-yellow';
   } else {
-    emoji = '🔴';
+    chipClass = 'chip-red';
   }
 
-  ampel.textContent = `${emoji} Ø ${avg.toFixed(3).replace('.', ',')} €`;
+  ampel.className = `header-chip ${chipClass}`;
+  ampel.textContent = `Avg ${avg.toFixed(3).replace('.', ',')} EUR`;
   ampel.classList.remove('hidden');
 
   const now = new Date().getHours();
   if ((now >= 14 && now < 18) || now >= 21) {
     const best = smartResults.find(r => r.recommendation === 'BEST_VALUE');
     if (best && best.netSavings > 0) {
-      banner.textContent = `💡 Spare ${best.netSavings.toFixed(2).replace('.', ',')} € heute`;
+      banner.textContent = `Spare ${best.netSavings.toFixed(2).replace('.', ',')} EUR heute`;
       banner.classList.remove('hidden');
     }
   } else {
@@ -264,7 +273,7 @@ function showFirstVisitToast(): void {
   if (!visited) {
     saveToStorage('hasVisited', true);
     setTimeout(() => {
-      showToast('Neu: Lohnt-sich Berechnung! Finde die Tankstelle, die sich wirklich rechnet.', 'info', 6000);
+      showToast('Willkommen! FuelFinder berechnet welche Tankstelle sich wirklich lohnt.', 'info', 5000);
     }, 1500);
   }
 }
