@@ -13,12 +13,14 @@ import { initBottomSheet, setSheetState, getSheetState } from './components/Bott
 import { showToast } from './components/Toast';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 
-// Auto-Refresh alle 30 Minuten (Daten werden alle 30 Min von GitHub Actions aktualisiert)
-const REFRESH_INTERVAL = 30 * 60 * 1000;
+// Auto-Refresh alle 30 Minuten
+const REFRESH_INTERVAL_SEC = 1800;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
-let refreshCountdown = 1800; // 30 Minuten in Sekunden
-let countdownInterval: ReturnType<typeof setInterval> | null = null;
-let lastRefreshTime = Date.now(); // Zeitpunkt des letzten Refreshs (drift-resistent)
+let refreshCountdown = REFRESH_INTERVAL_SEC;
+let lastRefreshTime = Date.now();
+
+// Guard: Verhindert gleichzeitige Refresh-Aufrufe
+let isRefreshing = false;
 
 // Haupt-App aufbauen: Vollbild-Karte + Top-Bar + Bottom Sheet
 function buildApp(): void {
@@ -92,7 +94,7 @@ function buildApp(): void {
   // Event-Listener
   document.getElementById('btn-settings')?.addEventListener('click', () => store.toggleCalculator());
   document.getElementById('btn-locate')?.addEventListener('click', locateUser);
-  document.getElementById('btn-refresh')?.addEventListener('click', doRefresh);
+  document.getElementById('btn-refresh')?.addEventListener('click', () => doRefresh(false));
   document.getElementById('btn-filter')?.addEventListener('click', openFilter);
 
   // Store Events
@@ -117,14 +119,13 @@ function buildApp(): void {
   locateUser();
   startRefreshTimer();
 
-  // Wenn Tab wieder sichtbar wird → sofort prüfen ob Refresh nötig
+  // Wenn Tab wieder sichtbar wird → prüfen ob Refresh nötig (30 Min Schwelle)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       const elapsed = Date.now() - lastRefreshTime;
-      // Refresh wenn mehr als 2 Minuten seit letztem Refresh vergangen
-      if (elapsed > 2 * 60 * 1000) {
+      if (elapsed > REFRESH_INTERVAL_SEC * 1000) {
         console.log(`[FuelFinder] Tab aktiv nach ${Math.round(elapsed / 60000)} Min. → Auto-Refresh`);
-        doRefresh();
+        doRefresh(true);
       }
     }
   });
@@ -132,7 +133,7 @@ function buildApp(): void {
   // Online-Event: Refresh wenn Verbindung wiederhergestellt
   window.addEventListener('online', () => {
     console.log('[FuelFinder] Wieder online → Refresh');
-    doRefresh();
+    doRefresh(true);
   });
 }
 
@@ -204,14 +205,11 @@ async function searchStations(lat: number, lng: number): Promise<void> {
     if (cached && cached.stations.length > 0) {
       stations = filterCachedStations(cached, lat, lng, radius, fuelType);
 
-      // Cache-Alter anzeigen und bei alten Daten auch Live-API versuchen
+      // Bei alten Daten (>60 Min) automatisch Live-API versuchen
       const cacheTime = getCacheAge();
       if (cacheTime) {
-        const age = Date.now() - new Date(cacheTime).getTime();
-        const ageMin = Math.round(age / 60000);
+        const ageMin = Math.round((Date.now() - new Date(cacheTime).getTime()) / 60000);
         if (ageMin > 60) {
-          showToast(`Daten sind ${ageMin > 120 ? Math.round(ageMin / 60) + 'h' : ageMin + ' Min.'} alt — lade Live-Daten...`, 'warning', 3000);
-          // Versuche frischere Live-Daten zu holen
           try {
             const response = await fetchStations(lat, lng, radius, fuelType);
             if (response.stations.length > 0) {
@@ -233,9 +231,6 @@ async function searchStations(lat: number, lng: number): Promise<void> {
         // Wenn auch API fehlschlägt und wir Cache-Daten haben, größeren Radius probieren
         if (cached && cached.stations.length > 0) {
           stations = filterCachedStations(cached, lat, lng, Math.min(radius * 2, 25), fuelType);
-          if (stations.length > 0) {
-            showToast('API nicht erreichbar, zeige Daten aus dem Cache', 'warning', 3000);
-          }
         }
         if (!stations || stations.length === 0) {
           throw apiErr;
@@ -284,16 +279,31 @@ function onHeatmapToggled(): void {
   toggleHeatmap(smartResults, showHeatmap);
 }
 
-// Preise aktualisieren: LIVE von der API holen, nicht nur stale JSON neu laden
-async function doRefresh(): Promise<void> {
-  const { position: pos, fuelType, radius, userProfile } = store.getState();
-  if (!pos) {
-    showToast('Kein Standort verfügbar — bitte GPS aktivieren', 'warning');
+// Preise aktualisieren
+// silent=true: Auto-Refresh (kein Toast), silent=false: Manueller Button (mit Toast)
+async function doRefresh(silent: boolean): Promise<void> {
+  // Guard: Kein paralleler Refresh
+  if (isRefreshing) {
+    console.log('[FuelFinder] Refresh läuft bereits, überspringe');
     return;
   }
 
-  store.setLoading(true);
-  showToast('Aktualisiere Preise...', 'info', 1500);
+  const { position: pos, fuelType, radius, userProfile } = store.getState();
+  if (!pos) {
+    if (!silent) showToast('Kein Standort verfügbar — bitte GPS aktivieren', 'warning');
+    return;
+  }
+
+  isRefreshing = true;
+  // Timer sofort zurücksetzen BEVOR der async Fetch startet
+  // → verhindert dass Countdown erneut doRefresh auslöst
+  lastRefreshTime = Date.now();
+  refreshCountdown = REFRESH_INTERVAL_SEC;
+
+  if (!silent) {
+    store.setLoading(true);
+    showToast('Aktualisiere Preise...', 'info', 1500);
+  }
 
   try {
     let stations;
@@ -321,41 +331,41 @@ async function doRefresh(): Promise<void> {
       const results = calculateSmartResults(stations, userProfile);
       store.setSmartResults(results);
       updateStationMarkers(results);
-      showToast(`${stations.length} Tankstellen aktualisiert`, 'success', 2000);
+      if (!silent) {
+        showToast(`${stations.length} Tankstellen aktualisiert`, 'success', 2000);
+      }
+      console.log(`[FuelFinder] Refresh OK: ${stations.length} Stationen`);
     } else {
-      showToast('Keine Tankstellen gefunden', 'warning');
+      if (!silent) showToast('Keine Tankstellen gefunden', 'warning');
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Refresh fehlgeschlagen';
-    showToast(message, 'error');
+    if (!silent) showToast(message, 'error');
+    console.error('[FuelFinder] Refresh Fehler:', message);
   } finally {
-    store.setLoading(false);
+    isRefreshing = false;
+    if (!silent) store.setLoading(false);
+    // Timer nochmal setzen für exakte Berechnung ab jetzt
     lastRefreshTime = Date.now();
-    refreshCountdown = 1800;
+    refreshCountdown = REFRESH_INTERVAL_SEC;
   }
 }
 
-// Auto-Refresh Timer: Drift-resistent (prüft echte verstrichene Zeit)
+// Auto-Refresh Timer: Ein einziger Intervall, drift-resistent
 function startRefreshTimer(): void {
   if (refreshTimer) clearInterval(refreshTimer);
-  if (countdownInterval) clearInterval(countdownInterval);
 
   lastRefreshTime = Date.now();
-  refreshCountdown = 1800;
+  refreshCountdown = REFRESH_INTERVAL_SEC;
 
-  // Haupt-Timer: Alle 30 Min (Backup, falls visibilitychange nicht feuert)
+  // Einziger Timer: Jede Sekunde Countdown aktualisieren + bei 0 refreshen
   refreshTimer = setInterval(() => {
-    doRefresh();
-  }, REFRESH_INTERVAL);
+    const elapsedSec = Math.floor((Date.now() - lastRefreshTime) / 1000);
+    refreshCountdown = Math.max(0, REFRESH_INTERVAL_SEC - elapsedSec);
 
-  // Countdown-Tick: Jede Sekunde, aber drift-resistent
-  countdownInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - lastRefreshTime) / 1000);
-    refreshCountdown = Math.max(0, 1800 - elapsed);
-
-    // Falls Timer vom Browser gedrosselt wurde: Refresh nachholen
-    if (refreshCountdown <= 0) {
-      doRefresh();
+    // Bei 0 → Silent Refresh (nur wenn nicht bereits läuft)
+    if (refreshCountdown <= 0 && !isRefreshing) {
+      doRefresh(true);
     }
 
     updateRefreshUI();
@@ -366,22 +376,16 @@ function updateRefreshUI(): void {
   const circle = document.getElementById('refresh-circle');
   const text = document.getElementById('refresh-text');
   if (circle) {
-    const progress = refreshCountdown / 1800;
+    const progress = refreshCountdown / REFRESH_INTERVAL_SEC;
     const dashOffset = 81.68 * (1 - progress);
     circle.setAttribute('stroke-dashoffset', dashOffset.toString());
   }
   if (text) {
-    // Zeige wann der Client zuletzt Daten geladen hat (nicht Server-Alter)
+    // Zeige wann der Client zuletzt Daten geladen hat
     const state = store.getState();
-    if (state.lastUpdated) {
-      text.textContent = formatTimeAgo(state.lastUpdated);
-    } else {
-      // Fallback: Server-Datenalter wenn noch kein Client-Refresh
-      const cacheTime = getCacheAge();
-      text.textContent = cacheTime
-        ? formatTimeAgo(new Date(cacheTime))
-        : '--';
-    }
+    text.textContent = state.lastUpdated
+      ? formatTimeAgo(state.lastUpdated)
+      : '--';
   }
 }
 
