@@ -1,7 +1,7 @@
 # =============================================================
 # Preis-Update alle 30 Minuten via Tankerkönig API
-# 48 Standorte in 24 Gruppen (Rotation), 2 Aufrufe pro Lauf
-# 48 Runs/Tag × 2 = 96 API-Aufrufe/Tag (Limit: 100)
+# 48 Standorte × 25km = ganz Deutschland flächendeckend
+# Alle Standorte werden in jedem Lauf komplett abgefragt
 # Committed die neuen Daten → triggert automatisch deploy.yml
 # =============================================================
 
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Tankstellenpreise abrufen
+      - name: Tankstellenpreise abrufen (ganz Deutschland)
         run: node scripts/fetch-prices.mjs
         env:
           TANKERKOENIG_API_KEY: ${{ secrets.VITE_TANKERKOENIG_API_KEY }}
@@ -46,6 +46,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Keine Änderungen, überspringe Commit"
           else
-            git commit -m "chore: Preise aktualisiert — Gruppe $(date -u +'%H:%M UTC') [$(date -u +'%Y-%m-%d')]"
+            git commit -m "chore: Preise aktualisiert — $(date -u +'%H:%M UTC') [$(date -u +'%Y-%m-%d')]"
             git push
           fi
