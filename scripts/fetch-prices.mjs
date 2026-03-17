@@ -3,10 +3,9 @@
 // Tankstellenpreise von der Tankerkönig API holen
 // Wird alle 30 Minuten von GitHub Actions ausgeführt
 //
-// Strategie: 48 Standorte über ganz Deutschland verteilt
-// Aufgeteilt in 24 Gruppen à 2 Standorte (Rotation)
-// Jeder Lauf holt 2 Standorte → 48 Runs/Tag × 2 = 96 Aufrufe
-// Jede Region wird ca. 2× täglich aktualisiert
+// Strategie: 48 Standorte × 25km Radius = ganz Deutschland
+// Alle Standorte werden in jedem Lauf abgefragt
+// 48 API-Aufrufe pro Lauf, alle 30 Minuten
 // =============================================================
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
@@ -17,7 +16,6 @@ const BASE_URL = 'https://creativecommons.tankerkoenig.de/json';
 const RADIUS = 25; // km — Maximaler Suchradius
 
 // 48 strategische Standorte: Decken ganz Deutschland flächendeckend ab
-// Sortiert: Großstädte + Mittelstädte + ländliche Lückenfüller
 const ALL_LOCATIONS = [
   // Großstädte (16)
   { name: 'Berlin',      lat: 52.520, lng: 13.405 },
@@ -74,20 +72,6 @@ const ALL_LOCATIONS = [
   { name: 'Ingolstadt',   lat: 48.764, lng: 11.425 },
 ];
 
-// 24 Gruppen à 2 Standorte
-const GROUPS = [];
-for (let i = 0; i < ALL_LOCATIONS.length; i += 2) {
-  GROUPS.push(ALL_LOCATIONS.slice(i, i + 2));
-}
-
-// Aktuelle Gruppe basierend auf Uhrzeit bestimmen
-// 48 Slots/Tag (alle 30 Min) → 24 Gruppen → jede Gruppe 2×/Tag
-function getCurrentGroupIndex() {
-  const now = new Date();
-  const slotIndex = now.getUTCHours() * 2 + Math.floor(now.getUTCMinutes() / 30);
-  return slotIndex % GROUPS.length;
-}
-
 // Tankstellen für einen Standort abrufen
 async function fetchLocation(location) {
   const url = `${BASE_URL}/list.php?lat=${location.lat}&lng=${location.lng}&rad=${RADIUS}&sort=dist&type=all&apikey=${API_KEY}`;
@@ -141,19 +125,15 @@ async function main() {
     existing.stations.forEach(s => stationMap.set(s.id, s));
   }
 
-  // Aktuelle Gruppe bestimmen
-  const groupIndex = getCurrentGroupIndex();
-  const currentGroup = GROUPS[groupIndex];
-
-  console.log(`\n🔄 Rotation: Gruppe ${groupIndex + 1}/${GROUPS.length}`);
-  console.log(`   Standorte: ${currentGroup.map(c => c.name).join(', ')}`);
-  console.log(`   Gesamt: ${ALL_LOCATIONS.length} Standorte in ${GROUPS.length} Gruppen\n`);
+  console.log(`\n⛽ Hole Tankstellenpreise für ganz Deutschland`);
+  console.log(`   ${ALL_LOCATIONS.length} Standorte × ${RADIUS}km Radius\n`);
 
   let apiCalls = 0;
   let totalNew = 0;
+  let errors = 0;
 
-  for (const location of currentGroup) {
-    console.log(`📍 Hole Tankstellen für ${location.name}...`);
+  for (const location of ALL_LOCATIONS) {
+    console.log(`📍 ${location.name}...`);
     try {
       const stations = await fetchLocation(location);
       apiCalls++;
@@ -182,14 +162,15 @@ async function main() {
       });
 
       totalNew += newCount;
-      console.log(`   ✅ ${newCount} Stationen aktualisiert (${stations.length} gefunden)`);
+      console.log(`   ✅ ${newCount} Stationen (${stations.length} gefunden)`);
     } catch (err) {
-      console.error(`   ❌ Fehler: ${err.message}`);
+      errors++;
+      console.error(`   ❌ ${err.message}`);
     }
 
-    // 1 Sekunde Pause zwischen API-Aufrufen
-    if (apiCalls < currentGroup.length) {
-      await new Promise(r => setTimeout(r, 1000));
+    // 500ms Pause zwischen API-Aufrufen (48 Aufrufe × 0.5s = ~24s gesamt)
+    if (apiCalls < ALL_LOCATIONS.length) {
+      await new Promise(r => setTimeout(r, 500));
     }
   }
 
@@ -198,9 +179,8 @@ async function main() {
     lastUpdated: new Date().toISOString(),
     apiCalls,
     stationCount: stationMap.size,
-    group: groupIndex + 1,
-    groupLocations: currentGroup.map(c => c.name),
-    totalGroups: GROUPS.length,
+    locationsChecked: ALL_LOCATIONS.length,
+    errors,
     stations: Array.from(stationMap.values()),
   };
 
@@ -208,8 +188,8 @@ async function main() {
 
   const sizeKB = (Buffer.byteLength(JSON.stringify(output)) / 1024).toFixed(1);
   console.log(`\n✅ Fertig! ${stationMap.size} Stationen gesamt (${sizeKB} KB)`);
-  console.log(`   ${totalNew} Stationen in diesem Lauf aktualisiert`);
-  console.log(`   API-Aufrufe: ${apiCalls}`);
+  console.log(`   ${totalNew} Stationen aktualisiert`);
+  console.log(`   API-Aufrufe: ${apiCalls}, Fehler: ${errors}`);
 }
 
 main().catch(err => {
