@@ -14,6 +14,15 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         runtimeCaching: [
           {
+            urlPattern: /\/data\/stations\.json/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'station-data',
+              expiration: { maxEntries: 1, maxAgeSeconds: 30 * 60 },
+              networkTimeoutSeconds: 5
+            }
+          },
+          {
             urlPattern: /^https:\/\/tiles\.openfreemap\.org/,
             handler: 'CacheFirst',
             options: {
@@ -29,7 +38,9 @@ export default defineConfig({
               expiration: { maxEntries: 10, maxAgeSeconds: 5 * 60 }
             }
           }
-        ]
+        ],
+        // stations.json NICHT precachen — wird dynamisch via NetworkFirst geladen
+        globIgnores: ['**/data/stations.json']
       }
     })
   ],
