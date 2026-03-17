@@ -13,10 +13,10 @@ import { initBottomSheet, setSheetState, getSheetState } from './components/Bott
 import { showToast } from './components/Toast';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 
-// Auto-Refresh alle 15 Minuten (Daten werden stündlich von GitHub Actions aktualisiert)
-const REFRESH_INTERVAL = 15 * 60 * 1000;
+// Auto-Refresh alle 30 Minuten (Daten werden alle 30 Min von GitHub Actions aktualisiert)
+const REFRESH_INTERVAL = 30 * 60 * 1000;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
-let refreshCountdown = 900; // 15 Minuten in Sekunden
+let refreshCountdown = 1800; // 30 Minuten in Sekunden
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
 // Haupt-App aufbauen: Vollbild-Karte + Top-Bar + Bottom Sheet
@@ -263,7 +263,7 @@ async function doRefresh(): Promise<void> {
 
   // Cache im Speicher invalidieren und neu laden
   await searchStations(pos.lat, pos.lng);
-  refreshCountdown = 900;
+  refreshCountdown = 1800;
 }
 
 // Auto-Refresh Timer: Alle 15 Minuten Daten neu laden
@@ -271,7 +271,7 @@ function startRefreshTimer(): void {
   if (refreshTimer) clearInterval(refreshTimer);
   if (countdownInterval) clearInterval(countdownInterval);
 
-  refreshCountdown = 900;
+  refreshCountdown = 1800;
 
   refreshTimer = setInterval(() => {
     doRefresh();
@@ -287,7 +287,7 @@ function updateRefreshUI(): void {
   const circle = document.getElementById('refresh-circle');
   const text = document.getElementById('refresh-text');
   if (circle) {
-    const progress = refreshCountdown / 900;
+    const progress = refreshCountdown / 1800;
     const dashOffset = 81.68 * (1 - progress);
     circle.setAttribute('stroke-dashoffset', dashOffset.toString());
   }
