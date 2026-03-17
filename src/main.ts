@@ -231,9 +231,6 @@ async function searchStations(lat: number, lng: number): Promise<void> {
         // Wenn auch API fehlschlägt und wir Cache-Daten haben, größeren Radius probieren
         if (cached && cached.stations.length > 0) {
           stations = filterCachedStations(cached, lat, lng, Math.min(radius * 2, 25), fuelType);
-          if (stations.length > 0) {
-            showToast('API nicht erreichbar, zeige Daten aus dem Cache', 'warning', 3000);
-          }
         }
         if (!stations || stations.length === 0) {
           throw apiErr;
@@ -386,14 +383,9 @@ function updateRefreshUI(): void {
   if (text) {
     // Zeige wann der Client zuletzt Daten geladen hat
     const state = store.getState();
-    if (state.lastUpdated) {
-      text.textContent = formatTimeAgo(state.lastUpdated);
-    } else {
-      const cacheTime = getCacheAge();
-      text.textContent = cacheTime
-        ? formatTimeAgo(new Date(cacheTime))
-        : '--';
-    }
+    text.textContent = state.lastUpdated
+      ? formatTimeAgo(state.lastUpdated)
+      : '--';
   }
 }
 
