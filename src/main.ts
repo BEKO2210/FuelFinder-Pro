@@ -18,6 +18,7 @@ const REFRESH_INTERVAL = 30 * 60 * 1000;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 let refreshCountdown = 1800; // 30 Minuten in Sekunden
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
+let lastRefreshTime = Date.now(); // Zeitpunkt des letzten Refreshs (drift-resistent)
 
 // Haupt-App aufbauen: Vollbild-Karte + Top-Bar + Bottom Sheet
 function buildApp(): void {
@@ -115,6 +116,24 @@ function buildApp(): void {
   showFirstVisitToast();
   locateUser();
   startRefreshTimer();
+
+  // Wenn Tab wieder sichtbar wird → sofort prüfen ob Refresh nötig
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      const elapsed = Date.now() - lastRefreshTime;
+      // Refresh wenn mehr als 2 Minuten seit letztem Refresh vergangen
+      if (elapsed > 2 * 60 * 1000) {
+        console.log(`[FuelFinder] Tab aktiv nach ${Math.round(elapsed / 60000)} Min. → Auto-Refresh`);
+        doRefresh();
+      }
+    }
+  });
+
+  // Online-Event: Refresh wenn Verbindung wiederhergestellt
+  window.addEventListener('online', () => {
+    console.log('[FuelFinder] Wieder online → Refresh');
+    doRefresh();
+  });
 }
 
 // Sheet-Header: Sortier-Pillen rendern
@@ -263,23 +282,35 @@ async function doRefresh(): Promise<void> {
 
   // In-Memory-Cache explizit löschen → erzwingt Neuladen von stations.json
   invalidateCache();
+  showToast('Aktualisiere Preise...', 'info', 1500);
   await searchStations(pos.lat, pos.lng);
+  lastRefreshTime = Date.now();
   refreshCountdown = 1800;
 }
 
-// Auto-Refresh Timer: Alle 30 Minuten Daten neu laden
+// Auto-Refresh Timer: Drift-resistent (prüft echte verstrichene Zeit)
 function startRefreshTimer(): void {
   if (refreshTimer) clearInterval(refreshTimer);
   if (countdownInterval) clearInterval(countdownInterval);
 
+  lastRefreshTime = Date.now();
   refreshCountdown = 1800;
 
+  // Haupt-Timer: Alle 30 Min (Backup, falls visibilitychange nicht feuert)
   refreshTimer = setInterval(() => {
     doRefresh();
   }, REFRESH_INTERVAL);
 
+  // Countdown-Tick: Jede Sekunde, aber drift-resistent
   countdownInterval = setInterval(() => {
-    refreshCountdown = Math.max(0, refreshCountdown - 1);
+    const elapsed = Math.floor((Date.now() - lastRefreshTime) / 1000);
+    refreshCountdown = Math.max(0, 1800 - elapsed);
+
+    // Falls Timer vom Browser gedrosselt wurde: Refresh nachholen
+    if (refreshCountdown <= 0) {
+      doRefresh();
+    }
+
     updateRefreshUI();
   }, 1000);
 }
