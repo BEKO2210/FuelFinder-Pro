@@ -32,15 +32,23 @@ interface CachedData {
 let cachedData: CachedData | null = null;
 let cacheLoadedAt = 0;
 
+// In-Memory-Cache invalidieren (z.B. bei manuellem Refresh)
+export function invalidateCache(): void {
+  cachedData = null;
+  cacheLoadedAt = 0;
+}
+
 // Vorgeladene Daten aus public/data/stations.json laden
 export async function loadCachedStations(): Promise<CachedData | null> {
-  // Cache 5 Minuten im Speicher halten
-  if (cachedData && Date.now() - cacheLoadedAt < 5 * 60 * 1000) {
+  // Cache 2 Minuten im Speicher halten
+  if (cachedData && Date.now() - cacheLoadedAt < 2 * 60 * 1000) {
     return cachedData;
   }
 
   try {
-    const res = await fetch('./data/stations.json', { cache: 'no-cache' });
+    // Cache-Busting: Zeitstempel anhängen damit Browser/CDN immer frische Daten liefert
+    const bustParam = `_t=${Math.floor(Date.now() / 60000)}`;
+    const res = await fetch(`./data/stations.json?${bustParam}`, { cache: 'no-store' });
     if (!res.ok) return null;
     cachedData = await res.json();
     cacheLoadedAt = Date.now();

@@ -1,6 +1,6 @@
 import './styles/main.css';
 import { store } from './store/AppStore';
-import { loadCachedStations, filterCachedStations, fetchStations, getCacheAge } from './api/tankerkoenig';
+import { loadCachedStations, filterCachedStations, fetchStations, getCacheAge, invalidateCache } from './api/tankerkoenig';
 import { calculateSmartResults } from './utils/calculator';
 import { getCurrentPosition, getPositionByIP } from './utils/geo';
 import { formatTimeAgo } from './utils/formatter';
@@ -256,17 +256,18 @@ function onHeatmapToggled(): void {
   toggleHeatmap(smartResults, showHeatmap);
 }
 
-// Preise aktualisieren: Neuen Cache laden oder Stationen neu suchen
+// Preise aktualisieren: Cache invalidieren und frische Daten laden
 async function doRefresh(): Promise<void> {
   const pos = store.getState().position;
   if (!pos) return;
 
-  // Cache im Speicher invalidieren und neu laden
+  // In-Memory-Cache explizit löschen → erzwingt Neuladen von stations.json
+  invalidateCache();
   await searchStations(pos.lat, pos.lng);
   refreshCountdown = 1800;
 }
 
-// Auto-Refresh Timer: Alle 15 Minuten Daten neu laden
+// Auto-Refresh Timer: Alle 30 Minuten Daten neu laden
 function startRefreshTimer(): void {
   if (refreshTimer) clearInterval(refreshTimer);
   if (countdownInterval) clearInterval(countdownInterval);
