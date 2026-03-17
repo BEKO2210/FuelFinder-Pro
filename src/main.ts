@@ -204,13 +204,22 @@ async function searchStations(lat: number, lng: number): Promise<void> {
     if (cached && cached.stations.length > 0) {
       stations = filterCachedStations(cached, lat, lng, radius, fuelType);
 
-      // Cache-Alter anzeigen
+      // Cache-Alter anzeigen und bei alten Daten auch Live-API versuchen
       const cacheTime = getCacheAge();
       if (cacheTime) {
         const age = Date.now() - new Date(cacheTime).getTime();
         const ageMin = Math.round(age / 60000);
-        if (ageMin > 120) {
-          showToast(`Daten sind ${Math.round(ageMin / 60)}h alt`, 'warning', 3000);
+        if (ageMin > 60) {
+          showToast(`Daten sind ${ageMin > 120 ? Math.round(ageMin / 60) + 'h' : ageMin + ' Min.'} alt — lade Live-Daten...`, 'warning', 3000);
+          // Versuche frischere Live-Daten zu holen
+          try {
+            const response = await fetchStations(lat, lng, radius, fuelType);
+            if (response.stations.length > 0) {
+              stations = response.stations;
+            }
+          } catch {
+            // Cache-Daten reichen als Fallback
+          }
         }
       }
     }
@@ -275,17 +284,55 @@ function onHeatmapToggled(): void {
   toggleHeatmap(smartResults, showHeatmap);
 }
 
-// Preise aktualisieren: Cache invalidieren und frische Daten laden
+// Preise aktualisieren: LIVE von der API holen, nicht nur stale JSON neu laden
 async function doRefresh(): Promise<void> {
-  const pos = store.getState().position;
-  if (!pos) return;
+  const { position: pos, fuelType, radius, userProfile } = store.getState();
+  if (!pos) {
+    showToast('Kein Standort verfügbar — bitte GPS aktivieren', 'warning');
+    return;
+  }
 
-  // In-Memory-Cache explizit löschen → erzwingt Neuladen von stations.json
-  invalidateCache();
+  store.setLoading(true);
   showToast('Aktualisiere Preise...', 'info', 1500);
-  await searchStations(pos.lat, pos.lng);
-  lastRefreshTime = Date.now();
-  refreshCountdown = 1800;
+
+  try {
+    let stations;
+
+    // 1. Versuche LIVE-Daten von der Tankerkönig-API (frischeste Preise)
+    try {
+      const response = await fetchStations(pos.lat, pos.lng, radius, fuelType);
+      stations = response.stations;
+      console.log(`[FuelFinder] Live-API: ${stations.length} Stationen geladen`);
+    } catch (apiErr) {
+      console.warn('[FuelFinder] Live-API fehlgeschlagen, lade Cache:', apiErr);
+    }
+
+    // 2. Fallback: Cached stations.json neu laden
+    if (!stations || stations.length === 0) {
+      invalidateCache();
+      const cached = await loadCachedStations();
+      if (cached && cached.stations.length > 0) {
+        stations = filterCachedStations(cached, pos.lat, pos.lng, radius, fuelType);
+      }
+    }
+
+    if (stations && stations.length > 0) {
+      store.setStations(stations);
+      const results = calculateSmartResults(stations, userProfile);
+      store.setSmartResults(results);
+      updateStationMarkers(results);
+      showToast(`${stations.length} Tankstellen aktualisiert`, 'success', 2000);
+    } else {
+      showToast('Keine Tankstellen gefunden', 'warning');
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Refresh fehlgeschlagen';
+    showToast(message, 'error');
+  } finally {
+    store.setLoading(false);
+    lastRefreshTime = Date.now();
+    refreshCountdown = 1800;
+  }
 }
 
 // Auto-Refresh Timer: Drift-resistent (prüft echte verstrichene Zeit)
@@ -324,13 +371,15 @@ function updateRefreshUI(): void {
     circle.setAttribute('stroke-dashoffset', dashOffset.toString());
   }
   if (text) {
-    const cacheTime = getCacheAge();
-    if (cacheTime) {
-      text.textContent = formatTimeAgo(new Date(cacheTime));
+    // Zeige wann der Client zuletzt Daten geladen hat (nicht Server-Alter)
+    const state = store.getState();
+    if (state.lastUpdated) {
+      text.textContent = formatTimeAgo(state.lastUpdated);
     } else {
-      const state = store.getState();
-      text.textContent = state.lastUpdated
-        ? formatTimeAgo(state.lastUpdated)
+      // Fallback: Server-Datenalter wenn noch kein Client-Refresh
+      const cacheTime = getCacheAge();
+      text.textContent = cacheTime
+        ? formatTimeAgo(new Date(cacheTime))
         : '--';
     }
   }
