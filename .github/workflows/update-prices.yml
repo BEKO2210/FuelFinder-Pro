@@ -1,6 +1,7 @@
 # =============================================================
-# Stündlicher Preis-Update via Tankerkönig API
-# 4 Städte × 24h = 96 API-Aufrufe/Tag (Limit: 100)
+# Preis-Update alle 30 Minuten via Tankerkönig API
+# 48 Standorte in 24 Gruppen (Rotation), 2 Aufrufe pro Lauf
+# 48 Runs/Tag × 2 = 96 API-Aufrufe/Tag (Limit: 100)
 # Committed die neuen Daten → triggert automatisch deploy.yml
 # =============================================================
 
@@ -8,8 +9,8 @@ name: Update Fuel Prices
 
 on:
   schedule:
-    # Jede Stunde bei Minute 12 (vermeidet :00 Rush)
-    - cron: '12 * * * *'
+    # Alle 30 Minuten: Minute 7 und 37 (vermeidet :00/:30 Rush)
+    - cron: '7,37 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -45,6 +46,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Keine Änderungen, überspringe Commit"
           else
-            git commit -m "chore: Preise aktualisiert [$(date -u +'%Y-%m-%d %H:%M UTC')]"
+            git commit -m "chore: Preise aktualisiert — Gruppe $(date -u +'%H:%M UTC') [$(date -u +'%Y-%m-%d')]"
             git push
           fi
