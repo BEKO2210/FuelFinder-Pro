@@ -28,16 +28,16 @@
 ```
 GitHub Actions (stündlich)          Browser (Client)
 ┌──────────────────────┐           ┌──────────────────────┐
-│ Tankerkönig API      │           │ public/data/         │
-│ 4 Städte × 25km      │──commit──▶│ stations.json        │
-│ = 96 Aufrufe/Tag     │           │ (vorgeladene Preise) │
+│ Tankerkönig API          │           │ public/data/             │
+│ 4 Städte × 25km          │──commit─▶│ stations.json            │
+│ = 96 Aufrufe/Tag         │           │ (vorgeladene Preise)     │
 └──────────────────────┘           └──────────┬───────────┘
                                               │
                                    ┌──────────▼───────────┐
-                                   │ App lädt JSON         │
-                                   │ Filtert nach Standort │
-                                   │ Berechnet Entfernung  │
-                                   │ Fallback: Live API    │
+                                   │ App lädt JSON            │
+                                   │ Filtert nach Standort    │
+                                   │ Berechnet Entfernung     │
+                                   │ Fallback: Live API       │
                                    └──────────────────────┘
 ```
 
